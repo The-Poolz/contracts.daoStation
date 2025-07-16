@@ -2,8 +2,8 @@ const { ethers, network } = require("hardhat");
 const { expect } = require("chai");
 
 describe("PermitSwapExecutor", function () {
-  let owner, maintainer, user, referrer, treasury;
-  let executor, token, weth, router;
+  let owner: any, maintainer: any, user: any, referrer: any, treasury: any;
+  let executor: any, token: any, weth: any, router: any;
 
   beforeEach(async function () {
     const signers = await ethers.getSigners();

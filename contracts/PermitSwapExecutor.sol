@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface ISwapRouter {
@@ -41,7 +41,7 @@ contract PermitSwapExecutor is Ownable {
         _;
     }
 
-    constructor(address _uniswapRouter, address _treasury) {
+    constructor(address _uniswapRouter, address _treasury, address initialOwner) Ownable(initialOwner) {
         require(_uniswapRouter != address(0) && _treasury != address(0), "Zero address");
         uniswapRouter = _uniswapRouter;
         treasury = _treasury;

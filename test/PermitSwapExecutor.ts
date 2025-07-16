@@ -29,7 +29,11 @@ describe("PermitSwapExecutor", function () {
 
     // Deploy PermitSwapExecutor
     const PermitSwapExecutor = await ethers.getContractFactory("PermitSwapExecutor");
-    executor = await PermitSwapExecutor.deploy(router.address, await treasury.getAddress());
+    executor = await PermitSwapExecutor.deploy(
+      router.address,
+      await treasury.getAddress(),
+      await owner.getAddress()
+    );
     await executor.deployed();
 
     // Set maintainer

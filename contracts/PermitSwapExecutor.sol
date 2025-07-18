@@ -41,11 +41,27 @@ contract PermitSwapExecutor is Ownable {
         emit MaintainerSet(maintainer, allowed);
     }
 
+    /// @dev Permit, transfer from user, and approve router in one call
+    function _prepareToken(
+        IERC20PermitFull token,
+        address user,
+        uint256 amountIn,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) private {
+        token.permit(user, address(this), amountIn, deadline, v, r, s);
+        token.safeTransferFrom(user, address(this), amountIn);
+        token.safeIncreaseAllowance(uniswapRouter, amountIn);
+    }
+
     function executeSwap(
         address tokenIn,
         uint24 poolFee,
         uint amountIn,
         uint amountOutMin,
+        uint160 sqrtPriceLimitX96,
         address user,
         address referrer,
         uint deadline,
@@ -55,14 +71,9 @@ contract PermitSwapExecutor is Ownable {
     ) external onlyMaintainer {
         require(user != address(0), "Zero user");
         require(block.timestamp <= deadline, "Expired");
-        // cast token once to combined ERC20+Permit interface
+        // prepare token: permit, transfer, and approve
         IERC20PermitFull token = IERC20PermitFull(tokenIn);
-        // 1. Permit
-        token.permit(user, address(this), amountIn, deadline, v, r, s);
-        // 2. Transfer tokens from user
-        token.safeTransferFrom(user, address(this), amountIn);
-        // 3. Approve router: increase allowance by amountIn
-        token.safeIncreaseAllowance(uniswapRouter, amountIn);
+        _prepareToken(token, user, amountIn, deadline, v, r, s);
         // 4. Swap to WETH (Uniswap V3)
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
@@ -72,7 +83,7 @@ contract PermitSwapExecutor is Ownable {
             deadline: deadline,
             amountIn: amountIn,
             amountOutMinimum: amountOutMin,
-            sqrtPriceLimitX96: 0
+            sqrtPriceLimitX96: sqrtPriceLimitX96
         });
         uint wethReceived = ISwapRouter(uniswapRouter).exactInputSingle(params);
         // 5. Unwrap WETH to ETH

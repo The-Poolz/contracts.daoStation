@@ -1,28 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./interfaces/IERC20PermitFull.sol";
+import "./interfaces/ISwapRouter.sol";
 
-interface ISwapRouter {
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 deadline;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
-    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
-    function WETH9() external pure returns (address);
-}
 
 contract PermitSwapExecutor is Ownable {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20PermitFull;
     address public immutable uniswapRouter;
     address public immutable treasury;
     address public immutable WETH;
@@ -69,12 +55,14 @@ contract PermitSwapExecutor is Ownable {
     ) external onlyMaintainer {
         require(user != address(0), "Zero user");
         require(block.timestamp <= deadline, "Expired");
+        // cast token once to combined ERC20+Permit interface
+        IERC20PermitFull token = IERC20PermitFull(tokenIn);
         // 1. Permit
-        IERC20Permit(tokenIn).permit(user, address(this), amountIn, deadline, v, r, s);
+        token.permit(user, address(this), amountIn, deadline, v, r, s);
         // 2. Transfer tokens from user
-        IERC20(tokenIn).safeTransferFrom(user, address(this), amountIn);
+        token.safeTransferFrom(user, address(this), amountIn);
         // 3. Approve router: increase allowance by amountIn
-        IERC20(tokenIn).safeIncreaseAllowance(uniswapRouter, amountIn);
+        token.safeIncreaseAllowance(uniswapRouter, amountIn);
         // 4. Swap to WETH (Uniswap V3)
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,

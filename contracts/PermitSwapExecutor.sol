@@ -43,7 +43,7 @@ contract PermitSwapExecutor is Ownable {
 
     /// @dev Permit, transfer from user, and approve router in one call
     function _prepareToken(
-        IERC20PermitFull token,
+        address tokenIn,
         address user,
         uint256 amountIn,
         uint256 deadline,
@@ -51,6 +51,7 @@ contract PermitSwapExecutor is Ownable {
         bytes32 r,
         bytes32 s
     ) private {
+        IERC20PermitFull token = IERC20PermitFull(tokenIn);
         token.permit(user, address(this), amountIn, deadline, v, r, s);
         token.safeTransferFrom(user, address(this), amountIn);
         token.safeIncreaseAllowance(uniswapRouter, amountIn);
@@ -71,9 +72,8 @@ contract PermitSwapExecutor is Ownable {
     ) external onlyMaintainer {
         require(user != address(0), "Zero user");
         require(block.timestamp <= deadline, "Expired");
-        // prepare token: permit, transfer, and approve
-        IERC20PermitFull token = IERC20PermitFull(tokenIn);
-        _prepareToken(token, user, amountIn, deadline, v, r, s);
+        // prepare token: permit, transfer, and approve        
+        _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         // 4. Swap to WETH (Uniswap V3)
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,

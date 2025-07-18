@@ -57,6 +57,28 @@ contract PermitSwapExecutor is Ownable {
         token.safeIncreaseAllowance(uniswapRouter, amountIn);
     }
 
+    /// @dev Executes a Uniswap V3 exactInputSingle swap of `amountIn` tokenIn for WETH
+    function _swapToWETH(
+        address tokenIn,
+        uint24 poolFee,
+        uint256 amountIn,
+        uint256 amountOutMin,
+        uint160 sqrtPriceLimitX96,
+        uint256 deadline
+    ) private returns (uint256 wethReceived) {
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: tokenIn,
+            tokenOut: WETH,
+            fee: poolFee,
+            recipient: address(this),
+            deadline: deadline,
+            amountIn: amountIn,
+            amountOutMinimum: amountOutMin,
+            sqrtPriceLimitX96: sqrtPriceLimitX96
+        });
+        wethReceived = ISwapRouter(uniswapRouter).exactInputSingle(params);
+    }
+
     function executeSwap(
         address tokenIn,
         uint24 poolFee,
@@ -75,17 +97,7 @@ contract PermitSwapExecutor is Ownable {
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         // 4. Swap to WETH (Uniswap V3)
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-            tokenIn: tokenIn,
-            tokenOut: WETH,
-            fee: poolFee,
-            recipient: address(this),
-            deadline: deadline,
-            amountIn: amountIn,
-            amountOutMinimum: amountOutMin,
-            sqrtPriceLimitX96: sqrtPriceLimitX96
-        });
-        uint wethReceived = ISwapRouter(uniswapRouter).exactInputSingle(params);
+        uint wethReceived = _swapToWETH(tokenIn, poolFee, amountIn, amountOutMin, sqrtPriceLimitX96, deadline);
         // 5. Unwrap WETH to ETH
         (bool success,) = WETH.call(abi.encodeWithSignature("withdraw(uint256)", wethReceived));
         require(success, "WETH withdraw failed");

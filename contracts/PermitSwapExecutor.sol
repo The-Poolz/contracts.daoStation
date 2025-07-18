@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface ISwapRouter {
     struct ExactInputSingleParams {
@@ -21,6 +22,7 @@ interface ISwapRouter {
 }
 
 contract PermitSwapExecutor is Ownable {
+    using SafeERC20 for IERC20;
     address public immutable uniswapRouter;
     address public immutable treasury;
     address public immutable WETH;
@@ -70,9 +72,9 @@ contract PermitSwapExecutor is Ownable {
         // 1. Permit
         IERC20Permit(tokenIn).permit(user, address(this), amountIn, deadline, v, r, s);
         // 2. Transfer tokens from user
-        require(IERC20(tokenIn).transferFrom(user, address(this), amountIn), "TransferFrom failed");
-        // 3. Approve router
-        IERC20(tokenIn).approve(uniswapRouter, amountIn);
+        IERC20(tokenIn).safeTransferFrom(user, address(this), amountIn);
+        // 3. Approve router: increase allowance by amountIn
+        IERC20(tokenIn).safeIncreaseAllowance(uniswapRouter, amountIn);
         // 4. Swap to WETH (Uniswap V3)
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,

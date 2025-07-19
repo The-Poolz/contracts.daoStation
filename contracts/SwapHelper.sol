@@ -64,9 +64,7 @@ abstract contract SwapHelper {
     }
 
     /// @dev Unwraps WETH to ETH and returns the ETH balance
-    function _unwrapWETH(uint256 wethAmount) internal returns (uint256 ethBalance) {
+    function _unwrapWETH(uint256 wethAmount) internal {
         IWETH(WETH).withdraw(wethAmount);
-        ethBalance = address(this).balance;
-        require(ethBalance >= wethAmount, "No ETH");
     }
 }

@@ -65,12 +65,12 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         uint wethReceived = _swapToWETH(tokenIn, poolFee, amountIn, amountOutMin, sqrtPriceLimitX96, deadline);
         
         // Unwrap WETH to ETH
-        uint ethBalance = _unwrapWETH(wethReceived);
+        _unwrapWETH(wethReceived);
         
         // Distribute ETH (1.5% to maintainer, 1.5% treasury fee kept in contract, rest to user)
-        (uint256 treasuryFee, uint256 userAmt, uint256 maintainerAmt) = _distributeETH(ethBalance, user, msg.sender);
+        (uint256 treasuryFee, uint256 userAmt, uint256 maintainerAmt) = _distributeETH(wethReceived, user, msg.sender);
         
-        emit SwapExecuted(user, tokenIn, amountIn, ethBalance, userAmt, maintainerAmt, treasuryFee, referrer, msg.sender);
+        emit SwapExecuted(user, tokenIn, amountIn, wethReceived, userAmt, maintainerAmt, treasuryFee, referrer, msg.sender);
     }
 
     receive() external payable {}

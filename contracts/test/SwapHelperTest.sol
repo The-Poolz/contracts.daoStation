@@ -30,8 +30,8 @@ contract SwapHelperTest is SwapHelper {
         return _swapToWETH(tokenIn, poolFee, amountIn, amountOutMin, sqrtPriceLimitX96, deadline);
     }
 
-    function test_unwrapWETH(uint256 wethAmount) external returns (uint256 ethBalance) {
-        return _unwrapWETH(wethAmount);
+    function test_unwrapWETH(uint256 wethAmount) external {
+        _unwrapWETH(wethAmount);
     }
 
     function test_depositETH() external payable {}

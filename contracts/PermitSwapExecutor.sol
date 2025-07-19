@@ -54,7 +54,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external onlyMaintainer {
+    ) external onlyMaintainer nonReentrant {
         require(user != address(0), "Zero user");
         require(block.timestamp <= deadline, "Expired");
         

@@ -2,12 +2,13 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title TreasuryManager
  * @dev Manages treasury funds and fee distribution
  */
-abstract contract TreasuryManager is Ownable {
+abstract contract TreasuryManager is Ownable, ReentrancyGuard {
     event TreasuryWithdrawal(address indexed recipient, uint256 amount);
 
     /// @dev Distributes ETH to maintainer and user, keeps treasury fee in contract
@@ -24,7 +25,7 @@ abstract contract TreasuryManager is Ownable {
     }
 
     /// @dev Admin function to withdraw treasury funds to any address
-    function withdrawTreasury(address recipient, uint256 amount) external onlyOwner {
+    function withdrawTreasury(address recipient, uint256 amount) external onlyOwner nonReentrant {
         require(recipient != address(0), "Zero recipient address");
         require(amount <= address(this).balance, "Insufficient balance");
         payable(recipient).transfer(amount);

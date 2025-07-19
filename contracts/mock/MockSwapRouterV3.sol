@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 interface ISwapRouter {
     struct ExactInputSingleParams {
         address tokenIn;
@@ -27,7 +29,17 @@ contract MockSwapRouterV3 is ISwapRouter {
     }
 
     function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut) {
-        // Always return amountIn as amountOut for fixed price
-        return params.amountIn;
+        // Transfer input token from recipient (should be this contract)
+        IERC20 tokenIn = IERC20(params.tokenIn);
+        tokenIn.transferFrom(params.recipient, address(this), params.amountIn);
+        
+        // Calculate output amount (1:1 for simplicity)
+        amountOut = params.amountIn;
+        
+        // Transfer WETH to recipient
+        IERC20 weth = IERC20(params.tokenOut);
+        require(weth.transfer(params.recipient, amountOut), "WETH transfer failed");
+        
+        return amountOut;
     }
 }

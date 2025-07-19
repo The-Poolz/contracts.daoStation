@@ -5,6 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IERC20PermitFull.sol";
 import "./interfaces/ISwapRouter.sol";
 
+interface IWETH {
+    function withdraw(uint256 amount) external;
+}
+
 /**
  * @title SwapHelper
  * @dev Helper functions for token preparation, swapping, and WETH operations
@@ -61,8 +65,7 @@ abstract contract SwapHelper {
 
     /// @dev Unwraps WETH to ETH and returns the ETH balance
     function _unwrapWETH(uint256 wethAmount) internal returns (uint256 ethBalance) {
-        (bool success,) = WETH.call(abi.encodeWithSignature("withdraw(uint256)", wethAmount));
-        require(success, "WETH withdraw failed");
+        IWETH(WETH).withdraw(wethAmount);
         ethBalance = address(this).balance;
         require(ethBalance >= wethAmount, "No ETH");
     }

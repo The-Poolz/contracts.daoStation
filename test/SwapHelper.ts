@@ -5,6 +5,14 @@ describe("SwapHelper", function () {
   let user: any;
   let swapTest: any, token: any, weth: any, router: any;
 
+  describe("Deployment", function () {
+    it("should revert if router address is zero", async function () {
+      const SwapHelperTest = await hardhat.ethers.getContractFactory("SwapHelperTest");
+      await expect(SwapHelperTest.deploy(hardhat.ethers.ZeroAddress))
+        .to.be.revertedWith("Zero router address");
+    });
+  });
+
   beforeEach(async function () {
     const signers = await hardhat.ethers.getSigners();
     [, user] = signers;

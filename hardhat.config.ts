@@ -12,6 +12,12 @@ const config: HardhatUserConfig = {
       viaIR: true,
     },
   },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  },
 };
 
 export default config;

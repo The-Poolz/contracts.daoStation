@@ -150,6 +150,78 @@ describe("PermitSwapExecutor Main Contract", function () {
       expect(await executor.getTreasuryBalance()).to.equal(hardhat.ethers.parseEther("0.015"));
     });
 
+    it("should execute swap with WETH input (no swap needed)", async function () {
+      const wethAmount = hardhat.ethers.parseEther("1");
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+      
+      // Fund user with WETH
+      await weth.connect(user).deposit({ value: wethAmount });
+      
+      // Create permit signature for WETH
+      const nonce = await weth.nonces(user.address);
+      const domain = {
+        name: await weth.name(),
+        version: "1",
+        chainId: 31337,
+        verifyingContract: await weth.getAddress()
+      };
+      
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+      
+      const value = {
+        owner: user.address,
+        spender: await executor.getAddress(),
+        value: wethAmount,
+        nonce: nonce,
+        deadline: deadline
+      };
+      
+      const signature = await user.signTypedData(domain, types, value);
+      const { v, r, s } = hardhat.ethers.Signature.from(signature);
+      
+      const userInitialBalance = await hardhat.ethers.provider.getBalance(user.address);
+      const maintainerInitialBalance = await hardhat.ethers.provider.getBalance(maintainer.address);
+      const treasuryInitialBalance = await executor.getTreasuryBalance();
+      
+      // Execute swap with WETH as input (should skip the swap step)
+      await expect(executor.connect(maintainer).executeSwap(
+        await weth.getAddress(), // Using WETH as input token
+        3000, // Pool fee (irrelevant since no swap)
+        wethAmount,
+        hardhat.ethers.parseEther("0.9"), // Min out (irrelevant since no swap)
+        0, // No price limit (irrelevant since no swap)
+        user.address,
+        referrer.address,
+        deadline,
+        v,
+        r,
+        s
+      )).to.emit(executor, "SwapExecuted");
+      
+      // Check balances
+      const userFinalBalance = await hardhat.ethers.provider.getBalance(user.address);
+      const maintainerFinalBalance = await hardhat.ethers.provider.getBalance(maintainer.address);
+      const treasuryFinalBalance = await executor.getTreasuryBalance();
+      
+      // User should receive 97% of 1 ETH = 0.97 ETH
+      expect(userFinalBalance - userInitialBalance).to.equal(hardhat.ethers.parseEther("0.97"));
+      
+      // Maintainer should receive 1.5% of 1 ETH = 0.015 ETH (approximately, accounting for gas costs)
+      const maintainerGain = maintainerFinalBalance - maintainerInitialBalance;
+      expect(maintainerGain).to.be.closeTo(hardhat.ethers.parseEther("0.015"), hardhat.ethers.parseEther("0.001"));
+      
+      // Contract should retain 1.5% as treasury = 0.015 ETH
+      expect(treasuryFinalBalance - treasuryInitialBalance).to.equal(hardhat.ethers.parseEther("0.015"));
+    });
+
     it("should revert if not called by maintainer", async function () {
       const tokenAmount = hardhat.ethers.parseEther("100");
       const deadline = Math.floor(Date.now() / 1000) + 3600;

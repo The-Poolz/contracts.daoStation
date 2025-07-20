@@ -38,7 +38,10 @@ abstract contract SwapHelper {
         IERC20PermitFull token = IERC20PermitFull(tokenIn);
         token.permit(user, address(this), amountIn, deadline, v, r, s);
         token.safeTransferFrom(user, address(this), amountIn);
-        token.safeIncreaseAllowance(uniswapRouter, amountIn);
+        // Only approve router if token is not WETH (since we won't swap WETH)
+        if (tokenIn != WETH) {
+            token.safeIncreaseAllowance(uniswapRouter, amountIn);
+        }
     }
 
     /// @dev Executes a Uniswap V3 exactInputSingle swap of `amountIn` tokenIn for WETH

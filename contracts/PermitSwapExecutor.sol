@@ -61,8 +61,14 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         
-        // Swap to WETH (Uniswap V3)
-        uint wethReceived = _swapToWETH(tokenIn, poolFee, amountIn, amountOutMin, sqrtPriceLimitX96, deadline);
+        uint wethReceived;
+        // If input token is WETH, skip swap
+        if (tokenIn == WETH) {
+            wethReceived = amountIn;
+        } else {
+            // Swap to WETH (Uniswap V3)
+            wethReceived = _swapToWETH(tokenIn, poolFee, amountIn, amountOutMin, sqrtPriceLimitX96, deadline);
+        }
         
         // Unwrap WETH to ETH
         _unwrapWETH(wethReceived);

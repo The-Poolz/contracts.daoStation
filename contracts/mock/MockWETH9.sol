@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
-contract MockWETH9 is ERC20 {
+contract MockWETH9 is ERC20Permit {
     event Deposit(address indexed dst, uint wad);
     event Withdrawal(address indexed src, uint wad);
 
-    constructor() ERC20("Wrapped Ether", "WETH") {}
+    constructor() ERC20Permit("Wrapped Ether") ERC20("Wrapped Ether", "WETH") {}
 
     receive() external payable {
         deposit();

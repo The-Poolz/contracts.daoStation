@@ -9,19 +9,39 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @dev Manages treasury funds and fee distribution
  */
 abstract contract TreasuryManager is Ownable, ReentrancyGuard {
+    // Fee percentages (in basis points: 150 = 1.5%)
+    uint256 public maintainerFeePercent = 150; // 1.5% default
+    uint256 public treasuryFeePercent = 150;   // 1.5% default
+    
+    // Maximum fee limit (5% each = 500 basis points)
+    uint256 public constant MAX_FEE_PERCENT = 500;
+    
     event TreasuryWithdrawal(address indexed recipient, uint256 amount);
+    event FeeUpdated(uint256 maintainerFee, uint256 treasuryFee);
 
     /// @dev Distributes ETH to maintainer and user, keeps treasury fee in contract
     function _distributeETH(uint256 ethBalance, address user, address maintainer) internal returns (uint256 treasuryFee, uint256 userAmount, uint256 maintainerAmount) {
-        uint oneAndHalfPercent = (ethBalance * 15) / 1000; // 1.5%
-        treasuryFee = oneAndHalfPercent; // Treasury fee stays in contract
-        maintainerAmount = oneAndHalfPercent;
-        userAmount = ethBalance - (2 * oneAndHalfPercent); // User gets remainder after 3% total fees
+        maintainerAmount = (ethBalance * maintainerFeePercent) / 10000; // Convert basis points to percentage
+        treasuryFee = (ethBalance * treasuryFeePercent) / 10000;       // Convert basis points to percentage
+        userAmount = ethBalance - maintainerAmount - treasuryFee;      // User gets remainder after fees
         
         payable(maintainer).transfer(maintainerAmount);
         payable(user).transfer(userAmount);
         
         // No event here - will be emitted by main contract with full details
+    }
+
+    /// @dev Set fee percentages (only owner can call)
+    /// @param _maintainerFeePercent Maintainer fee in basis points (150 = 1.5%)
+    /// @param _treasuryFeePercent Treasury fee in basis points (150 = 1.5%)
+    function setFeePercents(uint256 _maintainerFeePercent, uint256 _treasuryFeePercent) external onlyOwner {
+        require(_maintainerFeePercent <= MAX_FEE_PERCENT, "Maintainer fee too high");
+        require(_treasuryFeePercent <= MAX_FEE_PERCENT, "Treasury fee too high");
+        
+        maintainerFeePercent = _maintainerFeePercent;
+        treasuryFeePercent = _treasuryFeePercent;
+        
+        emit FeeUpdated(_maintainerFeePercent, _treasuryFeePercent);
     }
 
     /// @dev Admin function to withdraw treasury funds to any address

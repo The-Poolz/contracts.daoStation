@@ -4,11 +4,8 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IERC20PermitFull.sol";
 import "./interfaces/ISwapRouter.sol";
+import "./interfaces/IWETH.sol";
 import "./interfaces/Errors.sol";
-
-interface IWETH {
-    function withdraw(uint256 amount) external;
-}
 
 /**
  * @title SwapHelper

@@ -1,0 +1,17 @@
+name: CI for Solidity Contracts
+
+on:
+    push:
+        branches:
+            - master
+            - main
+    pull_request:
+        types: [opened, synchronize, reopened]
+
+jobs:
+    build:
+        uses: The-Poolz/solidity-workflows/.github/workflows/build.yml@v0.6.0
+        secrets:
+            codecov_token: ${{ secrets.CODECOV_TOKEN }}
+            bscscan_api_key: ${{ secrets.BSCSCAN_API_KEY }}
+            cmc_api_key: ${{ secrets.CMC_API_KEY }}

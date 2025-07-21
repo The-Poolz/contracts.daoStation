@@ -109,4 +109,123 @@ describe("SwapHelper", function () {
     // Test passes if no revert
     expect(true).to.be.true;
   });
+
+  it("should validate permit signature correctly", async function () {
+    const amount = hardhat.ethers.parseEther("100");
+    
+    // Mint tokens to user
+    await token.mint(user.address, amount);
+    
+    // Create permit signature
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
+    const nonce = await token.nonces(user.address);
+    
+    const domain = {
+      name: await token.name(),
+      version: "1",
+      chainId: 31337,
+      verifyingContract: await token.getAddress()
+    };
+    
+    const types = {
+      Permit: [
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" }
+      ]
+    };
+    
+    const value = {
+      owner: user.address,
+      spender: await swapTest.getAddress(),
+      value: amount,
+      nonce: nonce,
+      deadline: deadline
+    };
+    
+    const signature = await user.signTypedData(domain, types, value);
+    const { v, r, s } = hardhat.ethers.Signature.from(signature);
+    
+    // Test validation with correct user - should not revert
+    await swapTest.test_validatePermitSignature(
+      await token.getAddress(),
+      user.address,
+      await swapTest.getAddress(),
+      amount,
+      deadline,
+      v,
+      r,
+      s
+    );
+    
+    // Test validation with different user - should revert with InvalidPermitSignature
+    const [, , , wrongUser] = await hardhat.ethers.getSigners();
+    await expect(
+      swapTest.test_validatePermitSignature(
+        await token.getAddress(),
+        wrongUser.address,
+        await swapTest.getAddress(),
+        amount,
+        deadline,
+        v,
+        r,
+        s
+      )
+    ).to.be.revertedWithCustomError(swapTest, "InvalidPermitSignature");
+  });
+
+  it("should reject arbitrary user with valid permit signature in prepareToken", async function () {
+    const amount = hardhat.ethers.parseEther("100");
+    
+    // Mint tokens to user
+    await token.mint(user.address, amount);
+    
+    // Create permit signature for the actual user
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
+    const nonce = await token.nonces(user.address);
+    
+    const domain = {
+      name: await token.name(),
+      version: "1",
+      chainId: 31337,
+      verifyingContract: await token.getAddress()
+    };
+    
+    const types = {
+      Permit: [
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" }
+      ]
+    };
+    
+    const value = {
+      owner: user.address,
+      spender: await swapTest.getAddress(),
+      value: amount,
+      nonce: nonce,
+      deadline: deadline
+    };
+    
+    const signature = await user.signTypedData(domain, types, value);
+    const { v, r, s } = hardhat.ethers.Signature.from(signature);
+    
+    // Try to use the permit signature with a different user address (attack scenario)
+    const [, , , wrongUser] = await hardhat.ethers.getSigners();
+    await expect(
+      swapTest.test_prepareToken(
+        await token.getAddress(),
+        wrongUser.address,  // Wrong user!
+        amount,
+        deadline,
+        v,
+        r,
+        s
+      )
+    ).to.be.revertedWithCustomError(swapTest, "InvalidPermitSignature");
+  });
 });

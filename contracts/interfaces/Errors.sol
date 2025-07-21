@@ -29,4 +29,7 @@ interface Errors {
     
     /// @notice Thrown when trying to withdraw more than available balance
     error InsufficientBalance();
+    
+    /// @notice Thrown when permit signature does not match the provided user address
+    error InvalidPermitSignature();
 }

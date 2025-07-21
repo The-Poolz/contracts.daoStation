@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IERC20PermitFull.sol";
 import "./interfaces/ISwapRouter.sol";
+import "./interfaces/Errors.sol";
 
 interface IWETH {
     function withdraw(uint256 amount) external;
@@ -20,7 +21,9 @@ abstract contract SwapHelper {
     address public immutable WETH;
 
     constructor(address _uniswapRouter) {
-        require(_uniswapRouter != address(0), "Zero router address");
+        if (_uniswapRouter == address(0)) {
+            revert Errors.ZeroRouterAddress();
+        }
         uniswapRouter = _uniswapRouter;
         WETH = ISwapRouter(_uniswapRouter).WETH9();
     }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./interfaces/Errors.sol";
 
 /**
  * @title TreasuryManager
@@ -35,8 +36,12 @@ abstract contract TreasuryManager is Ownable, ReentrancyGuard {
     /// @param _maintainerFeePercent Maintainer fee in basis points (150 = 1.5%)
     /// @param _treasuryFeePercent Treasury fee in basis points (150 = 1.5%)
     function setFeePercents(uint256 _maintainerFeePercent, uint256 _treasuryFeePercent) external onlyOwner {
-        require(_maintainerFeePercent <= MAX_FEE_PERCENT, "Maintainer fee too high");
-        require(_treasuryFeePercent <= MAX_FEE_PERCENT, "Treasury fee too high");
+        if (_maintainerFeePercent > MAX_FEE_PERCENT) {
+            revert Errors.MaintainerFeeTooHigh();
+        }
+        if (_treasuryFeePercent > MAX_FEE_PERCENT) {
+            revert Errors.TreasuryFeeTooHigh();
+        }
         
         maintainerFeePercent = _maintainerFeePercent;
         treasuryFeePercent = _treasuryFeePercent;
@@ -46,8 +51,12 @@ abstract contract TreasuryManager is Ownable, ReentrancyGuard {
 
     /// @dev Admin function to withdraw treasury funds to any address
     function withdrawTreasury(address recipient, uint256 amount) external onlyOwner nonReentrant {
-        require(recipient != address(0), "Zero recipient address");
-        require(amount <= address(this).balance, "Insufficient balance");
+        if (recipient == address(0)) {
+            revert Errors.ZeroRecipientAddress();
+        }
+        if (amount > address(this).balance) {
+            revert Errors.InsufficientBalance();
+        }
         payable(recipient).transfer(amount);
         emit TreasuryWithdrawal(recipient, amount);
     }

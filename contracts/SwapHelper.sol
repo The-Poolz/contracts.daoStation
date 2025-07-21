@@ -4,15 +4,8 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IERC20PermitFull.sol";
 import "./interfaces/ISwapRouter.sol";
+import "./interfaces/IWETH.sol";
 import "./interfaces/Errors.sol";
-
-/// @notice Interface for WETH (Wrapped Ether) withdraw functionality
-/// @dev Used to unwrap WETH tokens back to ETH
-interface IWETH {
-    /// @notice Withdraws WETH tokens and sends equivalent ETH to the caller
-    /// @param amount The amount of WETH to withdraw
-    function withdraw(uint256 amount) external;
-}
 
 /**
  * @title SwapHelper

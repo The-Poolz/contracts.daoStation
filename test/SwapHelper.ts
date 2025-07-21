@@ -9,7 +9,7 @@ describe("SwapHelper", function () {
     it("should revert if router address is zero", async function () {
       const SwapHelperTest = await hardhat.ethers.getContractFactory("SwapHelperTest");
       await expect(SwapHelperTest.deploy(hardhat.ethers.ZeroAddress))
-        .to.be.revertedWith("Zero router address");
+        .to.be.revertedWithCustomError(SwapHelperTest, "ZeroRouterAddress");
     });
   });
 

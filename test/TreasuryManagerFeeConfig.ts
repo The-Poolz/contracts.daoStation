@@ -57,10 +57,10 @@ describe("TreasuryManager Fee Configuration", function () {
       const MAX_FEE = 500; // 5%
       
       await expect(treasuryTest.connect(owner).setFeePercents(501, 200))
-        .to.be.revertedWith("Maintainer fee too high");
+        .to.be.revertedWithCustomError(treasuryTest, "MaintainerFeeTooHigh");
       
       await expect(treasuryTest.connect(owner).setFeePercents(200, 501))
-        .to.be.revertedWith("Treasury fee too high");
+        .to.be.revertedWithCustomError(treasuryTest, "TreasuryFeeTooHigh");
     });
 
     it("should allow setting maximum fees", async function () {

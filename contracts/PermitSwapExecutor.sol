@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "./TreasuryManager.sol";
 import "./SwapHelper.sol";
+import "./interfaces/Errors.sol";
 
 /**
  * @title PermitSwapExecutor
@@ -25,7 +26,9 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     );
 
     modifier onlyMaintainer() {
-        require(isMaintainer[msg.sender], "Not maintainer");
+        if (!isMaintainer[msg.sender]) {
+            revert Errors.NotMaintainer();
+        }
         _;
     }
 
@@ -55,8 +58,12 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         bytes32 r,
         bytes32 s
     ) external onlyMaintainer nonReentrant {
-        require(user != address(0), "Zero user");
-        require(block.timestamp <= deadline, "Expired");
+        if (user == address(0)) {
+            revert Errors.ZeroUser();
+        }
+        if (block.timestamp > deadline) {
+            revert Errors.Expired();
+        }
         
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);

@@ -238,7 +238,7 @@ describe("PermitSwapExecutor Main Contract", function () {
         27,
         hardhat.ethers.ZeroHash,
         hardhat.ethers.ZeroHash
-      )).to.be.revertedWith("Not maintainer");
+      )).to.be.revertedWithCustomError(executor, "NotMaintainer");
     });
 
     it("should revert if user is zero address", async function () {
@@ -257,7 +257,7 @@ describe("PermitSwapExecutor Main Contract", function () {
         27,
         hardhat.ethers.ZeroHash,
         hardhat.ethers.ZeroHash
-      )).to.be.revertedWith("Zero user");
+      )).to.be.revertedWithCustomError(executor, "ZeroUser");
     });
 
     it("should revert if deadline expired", async function () {
@@ -276,7 +276,7 @@ describe("PermitSwapExecutor Main Contract", function () {
         27,
         hardhat.ethers.ZeroHash,
         hardhat.ethers.ZeroHash
-      )).to.be.revertedWith("Expired");
+      )).to.be.revertedWithCustomError(executor, "Expired");
     });
   });
 

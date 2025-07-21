@@ -95,9 +95,11 @@ abstract contract SwapHelper {
 
     /// @notice Processes permit signature, transfers tokens, and approves router in one call
     /// @dev Internal function that handles the complete token preparation flow:
-    ///      1. Uses ERC-2612 permit to authorize this contract
-    ///      2. Transfers tokens from user to this contract
-    ///      3. Approves Uniswap router to spend tokens (only if not WETH)
+    ///      1. Validates that the permit signature was signed by the specified user address  
+    ///      2. Uses ERC-2612 permit to authorize this contract
+    ///      3. Transfers tokens from user to this contract
+    ///      4. Approves Uniswap router to spend tokens (only if not WETH)
+    ///      Reverts with InvalidPermitSignature if the signature doesn't match the user
     /// @param tokenIn The address of the ERC-20 token to prepare
     /// @param user The address of the token owner who signed the permit
     /// @param amountIn The amount of tokens to transfer and approve

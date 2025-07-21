@@ -15,7 +15,7 @@ Static analysis is performed using **Slither**. Whenever providing security advi
 
 Our project uses Solidity version 0.8.28 with `viaIR` enabled and optimizer set to 200 runs. Always use the latest best practices for Solidity 0.8.x when generating code or providing advice.
 
-The project uses Hardhat with TypeScript for development and testing. Any examples involving testing should use Hardhat and ethers.js (version 6) with TypeScript syntax. Maintain high test coverage (target: >95% statements) and ensure comprehensive testing of edge cases.
+The project uses Hardhat with TypeScript for development and testing. The testing framework used is Mocha, integrated with Hardhat. Any examples involving testing should use Hardhat, ethers.js (version 6), and Mocha with TypeScript syntax. Maintain high test coverage (target: >95% statements) and ensure comprehensive testing of edge cases.
 
 The code style follows the OpenZeppelin standard: clear function visibility (`public`, `external`, `internal`, `private`), NatSpec documentation comments for all public and external functions, and minimal inline comments for internal logic.
 

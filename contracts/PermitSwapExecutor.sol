@@ -29,7 +29,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     /// @param userAmount The amount of ETH sent to the user (97% by default)
     /// @param maintainerAmount The amount of ETH sent to the maintainer (1.5% by default)
     /// @param treasuryAmount The amount of ETH kept by the contract treasury (1.5% by default)
-    /// @param referrer The referrer address (currently unused but reserved for future use)
+    /// @param data The arbitrary bytes data sent with the swap
     /// @param maintainer The address of the maintainer who executed the swap
     event SwapExecuted(
         address indexed user,
@@ -39,7 +39,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         uint userAmount,
         uint maintainerAmount,
         uint treasuryAmount,
-        address referrer,
+        bytes data,
         address maintainer
     );
 
@@ -81,7 +81,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     /// @param amountOutMin The minimum amount of WETH to receive from the swap (slippage protection)
     /// @param sqrtPriceLimitX96 The price limit for the swap in sqrt(price) * 2^96 format (0 = no limit)
     /// @param user The address of the token owner who signed the permit
-    /// @param referrer The referrer address (reserved for future use, currently unused)
+    /// @param data Arbitrary bytes data to be included with the swap
     /// @param deadline The expiration timestamp for the permit signature
     /// @param v The recovery byte of the permit signature
     /// @param r Half of the ECDSA permit signature pair
@@ -93,7 +93,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         uint amountOutMin,
         uint160 sqrtPriceLimitX96,
         address user,
-        address referrer,
+        bytes calldata data,
         uint deadline,
         uint8 v,
         bytes32 r,
@@ -124,7 +124,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         // Distribute ETH (configurable fees to maintainer and treasury, rest to user)
         (uint256 treasuryFee, uint256 userAmt, uint256 maintainerAmt) = _distributeETH(wethReceived, user, msg.sender);
         
-        emit SwapExecuted(user, tokenIn, amountIn, wethReceived, userAmt, maintainerAmt, treasuryFee, referrer, msg.sender);
+        emit SwapExecuted(user, tokenIn, amountIn, wethReceived, userAmt, maintainerAmt, treasuryFee, data, msg.sender);
     }
 
     /// @notice Receives ETH payments (required for WETH unwrapping)

@@ -2,12 +2,12 @@ const hardhat = require("hardhat");
 const { expect } = require("chai");
 
 describe("PermitSwapExecutor Main Contract", function () {
-  let owner: any, maintainer: any, user: any, referrer: any, treasury: any;
+  let owner: any, maintainer: any, user: any, treasury: any;
   let executor: any, token: any, weth: any, router: any;
 
   beforeEach(async function () {
     const signers = await hardhat.ethers.getSigners();
-    [owner, maintainer, user, referrer, treasury] = signers;
+    [owner, maintainer, user, treasury] = signers;
 
     // Deploy mock WETH
     const MockWETH9 = await hardhat.ethers.getContractFactory("MockWETH9");
@@ -120,6 +120,9 @@ describe("PermitSwapExecutor Main Contract", function () {
       const userInitialBalance = await hardhat.ethers.provider.getBalance(user.address);
       const maintainerInitialBalance = await hardhat.ethers.provider.getBalance(maintainer.address);
       
+      // Test data to send with swap
+      const testData = hardhat.ethers.toUtf8Bytes("test swap data");
+      
       // Execute swap
       await expect(executor.connect(maintainer).executeSwap(
         await token.getAddress(),
@@ -128,7 +131,7 @@ describe("PermitSwapExecutor Main Contract", function () {
         hardhat.ethers.parseEther("0.9"), // min out
         0, // no price limit
         user.address,
-        referrer.address,
+        testData,
         deadline,
         v,
         r,
@@ -191,6 +194,9 @@ describe("PermitSwapExecutor Main Contract", function () {
       const maintainerInitialBalance = await hardhat.ethers.provider.getBalance(maintainer.address);
       const treasuryInitialBalance = await executor.getTreasuryBalance();
       
+      // Test data to send with swap
+      const testData = hardhat.ethers.toUtf8Bytes("weth swap data");
+      
       // Execute swap with WETH as input (should skip the swap step)
       await expect(executor.connect(maintainer).executeSwap(
         await weth.getAddress(), // Using WETH as input token
@@ -199,7 +205,7 @@ describe("PermitSwapExecutor Main Contract", function () {
         hardhat.ethers.parseEther("0.9"), // Min out (irrelevant since no swap)
         0, // No price limit (irrelevant since no swap)
         user.address,
-        referrer.address,
+        testData,
         deadline,
         v,
         r,
@@ -233,7 +239,7 @@ describe("PermitSwapExecutor Main Contract", function () {
         hardhat.ethers.parseEther("0.9"),
         0,
         user.address,
-        referrer.address,
+        "0x",
         deadline,
         27,
         hardhat.ethers.ZeroHash,
@@ -252,7 +258,7 @@ describe("PermitSwapExecutor Main Contract", function () {
         hardhat.ethers.parseEther("0.9"),
         0,
         hardhat.ethers.ZeroAddress,
-        referrer.address,
+        "0x",
         deadline,
         27,
         hardhat.ethers.ZeroHash,
@@ -271,7 +277,7 @@ describe("PermitSwapExecutor Main Contract", function () {
         hardhat.ethers.parseEther("0.9"),
         0,
         user.address,
-        referrer.address,
+        "0x",
         expiredDeadline,
         27,
         hardhat.ethers.ZeroHash,

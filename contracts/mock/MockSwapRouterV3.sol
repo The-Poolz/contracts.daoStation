@@ -2,32 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-/// @title Uniswap V3 SwapRouter Interface for Mock Implementation
-/// @notice Minimal interface needed for the mock swap router
-/// @dev Contains only the structs and functions needed for testing
-interface ISwapRouter {
-    /// @notice Parameters for exactInputSingle swaps
-    /// @dev Struct used to encapsulate swap parameters
-    struct ExactInputSingleParams {
-        /// @notice The address of the input token
-        address tokenIn;
-        /// @notice The address of the output token
-        address tokenOut;
-        /// @notice The fee tier of the pool
-        uint24 fee;
-        /// @notice The address that will receive the output tokens
-        address recipient;
-        /// @notice The deadline by which the swap must be executed
-        uint256 deadline;
-        /// @notice The exact amount of input tokens to swap
-        uint256 amountIn;
-        /// @notice The minimum amount of output tokens to receive
-        uint256 amountOutMinimum;
-        /// @notice The price limit for the swap
-        uint160 sqrtPriceLimitX96;
-    }
-}
+import "../interfaces/ISwapRouter.sol";
 
 /// @title Mock Uniswap V3 SwapRouter
 /// @notice A simplified mock implementation of Uniswap V3 SwapRouter for testing

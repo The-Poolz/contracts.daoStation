@@ -38,5 +38,5 @@ interface ISwapRouter {
     /// @notice Returns the address of the WETH9 token contract
     /// @dev Used to identify the canonical WETH token for the router
     /// @return The address of the WETH9 contract
-    function WETH9() external pure returns (address);
+    function WETH9() external view returns (address);
 }

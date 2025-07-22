@@ -151,7 +151,7 @@ executeSwap(
     amountOutMin,  // Minimum ETH to receive
     sqrtPriceLimitX96, // Price limit (0 = no limit)
     user,          // Original token owner
-    referrer,      // Referrer address (currently unused)
+    data,          // Arbitrary bytes data to include with swap
     deadline,      // Permit deadline
     v, r, s        // Permit signature components
 )

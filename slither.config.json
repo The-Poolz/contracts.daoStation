@@ -1,5 +1,5 @@
 {
-    "detectors_to_exclude": "solc-version,similar-names",
+    "detectors_to_exclude": "solc-version,similar-names,arbitrary-send-erc20-permit",
     "filter_paths": "contracts/mock,contracts/test,node_modules/@ironblocks/firewall-consumer/contracts/,node_modules/@openzeppelin/,node_modules/@poolzfinance/",
     "compile_force_framework": "hardhat"
 }

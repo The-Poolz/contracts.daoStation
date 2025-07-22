@@ -278,6 +278,60 @@ describe("PermitSwapExecutor Main Contract", function () {
         hardhat.ethers.ZeroHash
       )).to.be.revertedWithCustomError(executor, "Expired");
     });
+
+    it("should revert if permit signature is not signed by user", async function () {
+      const tokenAmount = hardhat.ethers.parseEther("100");
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+      
+      // Mint tokens to user
+      await token.mint(user.address, tokenAmount);
+      
+      // Create permit signature, but sign it with a different account (maintainer instead of user)
+      const nonce = await token.nonces(user.address);
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: 31337,
+        verifyingContract: await token.getAddress()
+      };
+      
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+      
+      const value = {
+        owner: user.address, // Permit is for user's tokens
+        spender: await executor.getAddress(),
+        value: tokenAmount,
+        nonce: nonce,
+        deadline: deadline
+      };
+      
+      // Sign with maintainer instead of user (this should fail)
+      const signature = await maintainer.signTypedData(domain, types, value);
+      const { v, r, s } = hardhat.ethers.Signature.from(signature);
+      
+      // This should revert because the signature doesn't match the user
+      await expect(executor.connect(maintainer).executeSwap(
+        await token.getAddress(),
+        3000,
+        tokenAmount,
+        hardhat.ethers.parseEther("0.9"),
+        0,
+        user.address,
+        referrer.address,
+        deadline,
+        v,
+        r,
+        s
+      )).to.be.reverted;
+    });
   });
 
   describe("Treasury Functions", function () {

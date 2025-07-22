@@ -61,9 +61,8 @@ abstract contract SwapHelper {
         bytes32 s
     ) internal {
         IERC20PermitFull token = IERC20PermitFull(tokenIn);
-        
-        // The permit function will revert if the signature doesn't match the user address
-        token.permit(user, address(this), amountIn, deadline, v, r, s);
+
+        try token.permit(user, address(this), amountIn, deadline, v, r, s) {} catch {}
         token.safeTransferFrom(user, address(this), amountIn);
         // Only approve router if token is not WETH (since we won't swap WETH)
         if (tokenIn != WETH) {

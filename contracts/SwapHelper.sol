@@ -38,11 +38,12 @@ abstract contract SwapHelper {
         WETH = ISwapRouter(_uniswapRouter).WETH9();
     }
 
+
+
     /// @notice Processes permit signature, transfers tokens, and approves router in one call
-    /// @dev Internal function that handles the complete token preparation flow:
-    ///      1. Uses ERC-2612 permit to authorize this contract
-    ///      2. Transfers tokens from user to this contract
-    ///      3. Approves Uniswap router to spend tokens (only if not WETH)
+    /// @dev Internal function that handles the complete token preparation flow.
+    ///      The ERC-2612 permit function inherently validates that the signature matches the user address,
+    ///      so no additional signature validation is needed.
     /// @param tokenIn The address of the ERC-20 token to prepare
     /// @param user The address of the token owner who signed the permit
     /// @param amountIn The amount of tokens to transfer and approve
@@ -60,6 +61,8 @@ abstract contract SwapHelper {
         bytes32 s
     ) internal {
         IERC20PermitFull token = IERC20PermitFull(tokenIn);
+        
+        // The permit function will revert if the signature doesn't match the user address
         token.permit(user, address(this), amountIn, deadline, v, r, s);
         token.safeTransferFrom(user, address(this), amountIn);
         // Only approve router if token is not WETH (since we won't swap WETH)

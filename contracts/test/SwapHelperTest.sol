@@ -19,19 +19,6 @@ contract SwapHelperTest is SwapHelper {
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
     }
 
-    function test_validatePermitSignature(
-        address tokenIn,
-        address user,
-        address spender,
-        uint256 amountIn,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external view {
-        _validatePermitSignature(tokenIn, user, spender, amountIn, deadline, v, r, s);
-    }
-
     function test_swapToWETH(
         address tokenIn,
         uint24 poolFee,

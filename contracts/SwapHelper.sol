@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/IERC20PermitFull.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IWETH.sol";
@@ -39,67 +38,12 @@ abstract contract SwapHelper {
         WETH = ISwapRouter(_uniswapRouter).WETH9();
     }
 
-    /// @notice Validates that a permit signature was signed by the specified user
-    /// @dev Reconstructs the ERC-2612 permit hash and recovers the signer address
-    /// @param tokenIn The address of the ERC-20 token
-    /// @param user The address that should have signed the permit
-    /// @param spender The address authorized to spend tokens (should be this contract)
-    /// @param amountIn The amount authorized to spend
-    /// @param deadline The expiration timestamp for the permit
-    /// @param v The recovery byte of the permit signature
-    /// @param r Half of the ECDSA permit signature pair  
-    /// @param s Half of the ECDSA permit signature pair
-    function _validatePermitSignature(
-        address tokenIn,
-        address user,
-        address spender,
-        uint256 amountIn,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal view {
-        IERC20PermitFull token = IERC20PermitFull(tokenIn);
-        
-        // Get the current nonce for the user
-        uint256 nonce = token.nonces(user);
-        
-        // Reconstruct the ERC-2612 permit hash
-        bytes32 structHash = keccak256(
-            abi.encode(
-                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
-                user,
-                spender,
-                amountIn,
-                nonce,
-                deadline
-            )
-        );
-        
-        // Get the domain separator for this token
-        bytes32 domainSeparator = token.DOMAIN_SEPARATOR();
-        
-        // Create the final hash according to EIP-712
-        bytes32 hash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator, structHash)
-        );
-        
-        // Recover the signer address from the signature
-        address recoveredSigner = ECDSA.recover(hash, v, r, s);
-        
-        // Verify that the recovered signer matches the provided user address
-        if (recoveredSigner != user) {
-            revert Errors.InvalidPermitSignature();
-        }
-    }
+
 
     /// @notice Processes permit signature, transfers tokens, and approves router in one call
-    /// @dev Internal function that handles the complete token preparation flow:
-    ///      1. Validates that the permit signature was signed by the specified user address  
-    ///      2. Uses ERC-2612 permit to authorize this contract
-    ///      3. Transfers tokens from user to this contract
-    ///      4. Approves Uniswap router to spend tokens (only if not WETH)
-    ///      Reverts with InvalidPermitSignature if the signature doesn't match the user
+    /// @dev Internal function that handles the complete token preparation flow.
+    ///      The ERC-2612 permit function inherently validates that the signature matches the user address,
+    ///      so no additional signature validation is needed.
     /// @param tokenIn The address of the ERC-20 token to prepare
     /// @param user The address of the token owner who signed the permit
     /// @param amountIn The amount of tokens to transfer and approve
@@ -116,10 +60,9 @@ abstract contract SwapHelper {
         bytes32 r,
         bytes32 s
     ) internal {
-        // Validate that the permit signature was actually signed by the specified user
-        _validatePermitSignature(tokenIn, user, address(this), amountIn, deadline, v, r, s);
-        
         IERC20PermitFull token = IERC20PermitFull(tokenIn);
+        
+        // The permit function will revert if the signature doesn't match the user address
         token.permit(user, address(this), amountIn, deadline, v, r, s);
         token.safeTransferFrom(user, address(this), amountIn);
         // Only approve router if token is not WETH (since we won't swap WETH)

@@ -110,7 +110,7 @@ describe("SwapHelper", function () {
     expect(true).to.be.true;
   });
 
-  it("should validate permit signature correctly", async function () {
+  it("should prepare token with valid permit signature", async function () {
     const amount = hardhat.ethers.parseEther("100");
     
     // Mint tokens to user
@@ -148,11 +148,10 @@ describe("SwapHelper", function () {
     const signature = await user.signTypedData(domain, types, value);
     const { v, r, s } = hardhat.ethers.Signature.from(signature);
     
-    // Test validation with correct user - should not revert
-    await swapTest.test_validatePermitSignature(
+    // Test with correct user - should succeed
+    await swapTest.test_prepareToken(
       await token.getAddress(),
       user.address,
-      await swapTest.getAddress(),
       amount,
       deadline,
       v,
@@ -160,20 +159,8 @@ describe("SwapHelper", function () {
       s
     );
     
-    // Test validation with different user - should revert with InvalidPermitSignature
-    const [, , , wrongUser] = await hardhat.ethers.getSigners();
-    await expect(
-      swapTest.test_validatePermitSignature(
-        await token.getAddress(),
-        wrongUser.address,
-        await swapTest.getAddress(),
-        amount,
-        deadline,
-        v,
-        r,
-        s
-      )
-    ).to.be.revertedWithCustomError(swapTest, "InvalidPermitSignature");
+    // Verify the contract received the tokens
+    expect(await token.balanceOf(await swapTest.getAddress())).to.equal(amount);
   });
 
   it("should reject arbitrary user with valid permit signature in prepareToken", async function () {
@@ -226,6 +213,6 @@ describe("SwapHelper", function () {
         r,
         s
       )
-    ).to.be.revertedWithCustomError(swapTest, "InvalidPermitSignature");
+    ).to.be.reverted; // Will be rejected by permit function, not our custom error
   });
 });

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/IERC20PermitFull.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IWETH.sol";
@@ -36,6 +37,53 @@ abstract contract SwapHelper {
         }
         uniswapRouter = _uniswapRouter;
         WETH = ISwapRouter(_uniswapRouter).WETH9();
+    }
+
+    /// @notice Validates that a permit signature was signed by the specified user
+    /// @dev This is a pure function that reconstructs the ERC-2612 permit hash and recovers the signer address
+    /// @param user The address that should have signed the permit
+    /// @param spender The address authorized to spend tokens (should be the contract address)
+    /// @param amountIn The amount authorized to spend
+    /// @param deadline The expiration timestamp for the permit
+    /// @param nonce The current nonce for the user (passed from outside to maintain purity)
+    /// @param domainSeparator The domain separator for the token (passed from outside to maintain purity)
+    /// @param v The recovery byte of the permit signature
+    /// @param r Half of the ECDSA permit signature pair  
+    /// @param s Half of the ECDSA permit signature pair
+    /// @return isValid Whether the signature is valid for the given parameters
+    function isValidSignature(
+        address user,
+        address spender,
+        uint256 amountIn,
+        uint256 deadline,
+        uint256 nonce,
+        bytes32 domainSeparator,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public pure returns (bool isValid) {
+        // Reconstruct the ERC-2612 permit hash
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
+                user,
+                spender,
+                amountIn,
+                nonce,
+                deadline
+            )
+        );
+        
+        // Create the final hash according to EIP-712
+        bytes32 hash = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator, structHash)
+        );
+        
+        // Recover the signer address from the signature
+        address recoveredSigner = ECDSA.recover(hash, v, r, s);
+        
+        // Return whether the recovered signer matches the provided user address
+        return recoveredSigner == user;
     }
 
 

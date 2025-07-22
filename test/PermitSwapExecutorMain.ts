@@ -325,7 +325,7 @@ describe("PermitSwapExecutor Main Contract", function () {
         hardhat.ethers.parseEther("0.9"),
         0,
         user.address,
-        referrer.address,
+        "0x",
         deadline,
         v,
         r,

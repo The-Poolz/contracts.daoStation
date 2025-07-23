@@ -11,38 +11,9 @@ import "./interfaces/Errors.sol";
  * @dev Main contract for executing permit-based token swaps to ETH with fee distribution.
  *      Uses Uniswap integration and reward distribution all in a single atomic transaction.
  *      Only approved maintainers can execute swap logic on behalf of users.
+ *      Now implements IPermitSwapExecutor interface and inherits from refactored modules.
  */
 contract PermitSwapExecutor is TreasuryManager, SwapHelper {
-    /// @notice Mapping to track authorized maintainers who can execute swaps
-    mapping(address => bool) public isMaintainer;
-
-    /// @notice Emitted when a maintainer's authorization status is updated
-    /// @param maintainer The address of the maintainer
-    /// @param allowed Whether the maintainer is now authorized
-    event MaintainerSet(address indexed maintainer, bool allowed);
-    
-    /// @notice Emitted when a swap is successfully executed
-    /// @param user The original token owner who signed the permit
-    /// @param tokenIn The input token that was swapped
-    /// @param amountIn The amount of input tokens swapped
-    /// @param ethOut The total amount of ETH received from the swap
-    /// @param userAmount The amount of ETH sent to the user (97% by default)
-    /// @param maintainerAmount The amount of ETH sent to the maintainer (1.5% by default)
-    /// @param treasuryAmount The amount of ETH kept by the contract treasury (1.5% by default)
-    /// @param data The arbitrary bytes data sent with the swap
-    /// @param maintainer The address of the maintainer who executed the swap
-    event SwapExecuted(
-        address indexed user,
-        address indexed tokenIn,
-        uint amountIn,
-        uint ethOut,
-        uint userAmount,
-        uint maintainerAmount,
-        uint treasuryAmount,
-        bytes data,
-        address maintainer
-    );
-
     /// @notice Modifier to restrict function access to authorized maintainers only
     /// @dev Reverts with NotMaintainer error if the caller is not an authorized maintainer
     modifier onlyMaintainer() {
@@ -53,13 +24,11 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     }
 
     /// @notice Initializes the PermitSwapExecutor contract
-    /// @dev Calls parent constructors for TreasuryManager and SwapHelper initialization
+    /// @dev Calls parent constructors for PermitSwapExecutorStorage initialization
     /// @param _uniswapRouter The address of the Uniswap V3 SwapRouter contract
     /// @param initialOwner The address that will be set as the contract owner
     constructor(address _uniswapRouter, address initialOwner) 
-        TreasuryManager()
-        SwapHelper(_uniswapRouter)
-        Ownable(initialOwner) 
+        PermitSwapExecutorStorage(_uniswapRouter, initialOwner)
     {
         // All validation is done in parent constructors
     }
@@ -68,7 +37,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     /// @dev Only the contract owner can call this function
     /// @param maintainer The address of the maintainer to update
     /// @param allowed Whether the maintainer should be authorized (true) or not (false)
-    function setMaintainer(address maintainer, bool allowed) external onlyOwner {
+    function setMaintainer(address maintainer, bool allowed) external override onlyOwner {
         isMaintainer[maintainer] = allowed;
         emit MaintainerSet(maintainer, allowed);
     }
@@ -98,7 +67,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) {
+    ) external override onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) {
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         
@@ -119,12 +88,4 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         
         emit SwapExecuted(user, tokenIn, amountIn, wethReceived, userAmt, maintainerAmt, treasuryFee, data, msg.sender);
     }
-
-    /// @notice Receives ETH payments (required for WETH unwrapping)
-    /// @dev This function is called when the contract receives ETH via transfer() or send()
-    receive() external payable {}
-    
-    /// @notice Fallback function to receive ETH payments
-    /// @dev This function is called when the contract receives ETH with non-matching function calls
-    fallback() external payable {}
 }

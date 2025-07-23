@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./TreasuryManager.sol";
 import "./SwapHelper.sol";
 import "./interfaces/Errors.sol";
 
@@ -23,14 +22,16 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         _;
     }
 
-    /// @notice Initializes the PermitSwapExecutor contract
-    /// @dev Calls parent constructors for PermitSwapExecutorStorage initialization
+    /// @notice Initializes the storage contract with Uniswap router and owner
+    /// @dev Sets up the router address and retrieves WETH address from it
     /// @param _uniswapRouter The address of the Uniswap V3 SwapRouter contract
     /// @param initialOwner The address that will be set as the contract owner
-    constructor(address _uniswapRouter, address initialOwner) 
-        PermitSwapExecutorStorage(_uniswapRouter, initialOwner)
-    {
-        // All validation is done in parent constructors
+    constructor(address _uniswapRouter, address initialOwner) Ownable(initialOwner) {
+        if (_uniswapRouter == address(0)) {
+            revert Errors.ZeroRouterAddress();
+        }
+        uniswapRouter = _uniswapRouter;
+        WETH = ISwapRouter(_uniswapRouter).WETH9();
     }
 
     /// @notice Sets the authorization status for a maintainer
@@ -40,22 +41,6 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     function setMaintainer(address maintainer, bool allowed) external override onlyOwner {
         isMaintainer[maintainer] = allowed;
         emit MaintainerSet(maintainer, allowed);
-    }
-
-    /// @notice Validates that a permit signature was signed by the specified user
-    /// @dev Delegates to SwapHelper implementation
-    function isValidSignature(
-        address user,
-        address spender,
-        uint256 amountIn,
-        uint256 deadline,
-        uint256 nonce,
-        bytes32 domainSeparator,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public pure override returns (bool isValid) {
-        return super.isValidSignature(user, spender, amountIn, deadline, nonce, domainSeparator, v, r, s);
     }
 
     /// @notice Executes a complete permit-based token swap to ETH with fee distribution
@@ -89,7 +74,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         
         uint wethReceived;
         // If input token is WETH, skip swap
-        if (tokenIn == WETH()) {
+        if (tokenIn == WETH) {
             wethReceived = amountIn;
         } else {
             // Swap to WETH (Uniswap V3)
@@ -104,4 +89,12 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         
         emit SwapExecuted(user, tokenIn, amountIn, wethReceived, userAmt, maintainerAmt, treasuryFee, data, msg.sender);
     }
+
+    /// @notice Receives ETH payments (required for WETH unwrapping)
+    /// @dev This function is called when the contract receives ETH via transfer() or send()
+    receive() external payable {}
+    
+    /// @notice Fallback function to receive ETH payments
+    /// @dev This function is called when the contract receives ETH with non-matching function calls
+    fallback() external payable {}
 }

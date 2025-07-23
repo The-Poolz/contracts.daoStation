@@ -9,8 +9,18 @@ describe("TreasuryManager", function () {
     const signers = await ethers.getSigners();
     [owner, user, maintainer] = signers;
 
+    // Deploy mock WETH
+    const MockWETH9 = await ethers.getContractFactory("MockWETH9");
+    const weth = await MockWETH9.deploy();
+    await weth.waitForDeployment();
+
+    // Deploy mock Uniswap V3 router
+    const MockSwapRouter = await ethers.getContractFactory("MockSwapRouterV3");
+    const router = await MockSwapRouter.deploy(await weth.getAddress());
+    await router.waitForDeployment();
+
     const TreasuryManagerTest = await ethers.getContractFactory("TreasuryManagerTest");
-    treasuryTest = await TreasuryManagerTest.deploy(owner.address);
+    treasuryTest = await TreasuryManagerTest.deploy(await router.getAddress(), await weth.getAddress(), owner.address);
     await treasuryTest.waitForDeployment();
   });
 

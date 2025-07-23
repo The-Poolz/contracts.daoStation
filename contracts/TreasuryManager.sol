@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./interfaces/Errors.sol";
-import "./PermitSwapExecutorStorage.sol";
+import "./PermitSwapExecutorState.sol";
 
 /**
  * @title TreasuryManager
@@ -10,9 +10,9 @@ import "./PermitSwapExecutorStorage.sol";
  * @dev Abstract contract that handles ETH distribution between users, maintainers, and treasury.
  *      Provides configurable fee percentages and treasury withdrawal functionality.
  *      Uses basis points for fee calculations (150 = 1.5%).
- *      State variables are now managed in PermitSwapExecutorStorage.
+ *      State variables are now managed in PermitSwapExecutorState.
  */
-abstract contract TreasuryManager is PermitSwapExecutorStorage {
+abstract contract TreasuryManager is PermitSwapExecutorState {
     /// @notice Distributes ETH to maintainer and user, keeps treasury fee in contract
     /// @dev Internal function that calculates and distributes fees based on current fee percentages
     /// @param ethBalance The total amount of ETH to distribute

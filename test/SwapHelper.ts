@@ -7,8 +7,9 @@ describe("SwapHelper", function () {
 
   describe("Deployment", function () {
     it("should revert if router address is zero", async function () {
+      const [owner] = await hardhat.ethers.getSigners();
       const SwapHelperTest = await hardhat.ethers.getContractFactory("SwapHelperTest");
-      await expect(SwapHelperTest.deploy(hardhat.ethers.ZeroAddress))
+      await expect(SwapHelperTest.deploy(hardhat.ethers.ZeroAddress, hardhat.ethers.ZeroAddress, owner.address))
         .to.be.revertedWithCustomError(SwapHelperTest, "ZeroRouterAddress");
     });
   });
@@ -33,7 +34,8 @@ describe("SwapHelper", function () {
     await router.waitForDeployment();
 
     const SwapHelperTest = await hardhat.ethers.getContractFactory("SwapHelperTest");
-    swapTest = await SwapHelperTest.deploy(await router.getAddress());
+    const [owner] = await hardhat.ethers.getSigners();
+    swapTest = await SwapHelperTest.deploy(await router.getAddress(), await weth.getAddress(), owner.address);
     await swapTest.waitForDeployment();
   });
 

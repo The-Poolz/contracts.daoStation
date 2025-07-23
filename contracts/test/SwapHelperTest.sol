@@ -2,10 +2,40 @@
 pragma solidity ^0.8.20;
 
 import "../SwapHelper.sol";
+import "../interfaces/Errors.sol";
 
 contract SwapHelperTest is SwapHelper {
-    
-    constructor(address _uniswapRouter) SwapHelper(_uniswapRouter) {}
+    constructor(address uniswapRouterAddress, address wethAddress, address initialOwner) 
+        Ownable(initialOwner) 
+    {
+        if (uniswapRouterAddress == address(0)) {
+            revert Errors.ZeroRouterAddress();
+        }
+        // Set the immutable variables
+        uniswapRouter = uniswapRouterAddress;
+        WETH = wethAddress;
+    }
+
+    // Implement required interface functions as dummy implementations for testing
+    function setMaintainer(address maintainer, bool allowed) external override {
+        // Dummy implementation for testing
+    }
+
+    function executeSwap(
+        address tokenIn,
+        uint24 poolFee,
+        uint amountIn,
+        uint amountOutMin,
+        uint160 sqrtPriceLimitX96,
+        address user,
+        bytes calldata data,
+        uint deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override {
+        // Dummy implementation for testing
+    }
 
     function test_prepareToken(
         address tokenIn,

@@ -28,4 +28,24 @@ abstract contract Modifiers {
         }
         _;
     }
+
+    /// @notice Validates that the recipient address is not zero
+    /// @dev Reverts with ZeroRecipientAddress error if the recipient address is zero
+    /// @param recipient The recipient address to validate
+    modifier validRecipient(address recipient) {
+        if (recipient == address(0)) {
+            revert Errors.ZeroRecipientAddress();
+        }
+        _;
+    }
+
+    /// @notice Validates that the contract has sufficient balance for the requested amount
+    /// @dev Reverts with InsufficientBalance error if the amount exceeds contract balance
+    /// @param amount The amount to validate against contract balance
+    modifier sufficientBalance(uint256 amount) {
+        if (amount > address(this).balance) {
+            revert Errors.InsufficientBalance();
+        }
+        _;
+    }
 }

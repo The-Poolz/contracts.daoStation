@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/Errors.sol";
+import "./common/Modifiers.sol";
 
 /**
  * @title TreasuryManager
@@ -12,7 +13,7 @@ import "./interfaces/Errors.sol";
  *      Provides configurable fee percentages and treasury withdrawal functionality.
  *      Uses basis points for fee calculations (150 = 1.5%).
  */
-abstract contract TreasuryManager is Ownable, ReentrancyGuard {
+abstract contract TreasuryManager is Ownable, ReentrancyGuard, Modifiers {
     /// @notice Fee percentage for maintainers in basis points (150 = 1.5%)
     /// @dev Default is 150 basis points (1.5%), maximum allowed is 500 basis points (5%)
     uint256 public maintainerFeePercent = 150; // 1.5% default
@@ -76,13 +77,7 @@ abstract contract TreasuryManager is Ownable, ReentrancyGuard {
     /// @dev Only the contract owner can call this function. Uses nonReentrant modifier for security
     /// @param recipient The address that will receive the withdrawn funds
     /// @param amount The amount of ETH to withdraw from the treasury
-    function withdrawTreasury(address recipient, uint256 amount) external onlyOwner nonReentrant {
-        if (recipient == address(0)) {
-            revert Errors.ZeroRecipientAddress();
-        }
-        if (amount > address(this).balance) {
-            revert Errors.InsufficientBalance();
-        }
+    function withdrawTreasury(address recipient, uint256 amount) external onlyOwner nonReentrant validRecipient(recipient) sufficientBalance(amount) {
         payable(recipient).transfer(amount);
         emit TreasuryWithdrawal(recipient, amount);
     }

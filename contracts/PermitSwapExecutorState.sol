@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/ISwapRouter.sol";
-import "./interfaces/Errors.sol";
 import "./interfaces/IPermitSwapExecutor.sol";
 import "./common/Modifiers.sol";
 

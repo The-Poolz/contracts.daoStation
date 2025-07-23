@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "./SwapHelper.sol";
-import "./interfaces/Errors.sol";
 
 /**
  * @title PermitSwapExecutor
@@ -22,7 +21,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         _;
     }
 
-    /// @notice Initializes the storage contract with Uniswap router and owner
+    /// @notice Initializes states with Uniswap router and owner
     /// @dev Sets up the router address and retrieves WETH address from it
     /// @param _uniswapRouter The address of the Uniswap V3 SwapRouter contract
     /// @param initialOwner The address that will be set as the contract owner

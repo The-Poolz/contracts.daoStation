@@ -3,9 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IERC20PermitFull.sol";
-import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IWETH.sol";
-import "./interfaces/Errors.sol";
 import "./TreasuryManager.sol";
 
 /**
@@ -39,7 +37,6 @@ abstract contract SwapHelper is TreasuryManager{
         bytes32 r,
         bytes32 s
     ) internal view {
-        
         bool isValid = isValidSignature(
             user,
             address(this),
@@ -81,7 +78,6 @@ abstract contract SwapHelper is TreasuryManager{
         // Validate permit signature before execution
         _validatePermitSignature(token, user, amountIn, deadline, v, r, s);
         
-
         try token.permit(user, address(this), amountIn, deadline, v, r, s) {} catch {}
         token.safeTransferFrom(user, address(this), amountIn);
         // Only approve router if token is not WETH (since we won't swap WETH)
@@ -117,9 +113,7 @@ abstract contract SwapHelper is TreasuryManager{
             amountOutMinimum: amountOutMin,
             sqrtPriceLimitX96: sqrtPriceLimitX96
         });
-        
-        address router = uniswapRouter;
-        wethReceived = ISwapRouter(router).exactInputSingle(params);
+        wethReceived = ISwapRouter(uniswapRouter).exactInputSingle(params);
     }
 
     /// @notice Unwraps WETH tokens to native ETH

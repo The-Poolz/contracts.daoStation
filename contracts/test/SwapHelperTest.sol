@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "../SwapHelper.sol";
-import "../interfaces/Errors.sol";
 
 contract SwapHelperTest is SwapHelper {
     constructor(address uniswapRouterAddress, address wethAddress, address initialOwner) 

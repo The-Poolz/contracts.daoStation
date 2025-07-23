@@ -7,7 +7,6 @@ import "./interfaces/IERC20PermitFull.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IWETH.sol";
 import "./interfaces/Errors.sol";
-import "./PermitSwapExecutorStorage.sol";
 
 /**
  * @title SwapHelper
@@ -17,10 +16,18 @@ import "./PermitSwapExecutorStorage.sol";
  *      - Uniswap V3 token swaps to WETH
  *      - WETH unwrapping to ETH
  *      Works with any ERC-20 token that supports ERC-2612 permit functionality.
- *      State variables are now managed in PermitSwapExecutorStorage.
+ *      State variables are accessed through inheritance chain.
  */
-abstract contract SwapHelper is PermitSwapExecutorStorage {
+abstract contract SwapHelper {
     using SafeERC20 for IERC20PermitFull;
+    
+    /// @notice Gets the Uniswap router address from the implementing contract
+    /// @return The address of the Uniswap V3 SwapRouter contract
+    function uniswapRouter() public view virtual returns (address);
+    
+    /// @notice Gets the WETH address from the implementing contract
+    /// @return The address of the WETH (Wrapped Ether) contract
+    function WETH() public view virtual returns (address);
     
     /// @notice Validates that a permit signature was signed by the specified user
     /// @dev This is a pure function that reconstructs the ERC-2612 permit hash and recovers the signer address
@@ -44,7 +51,7 @@ abstract contract SwapHelper is PermitSwapExecutorStorage {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public pure override returns (bool isValid) {
+    ) public pure returns (bool isValid) {
         // Reconstruct the ERC-2612 permit hash
         bytes32 structHash = keccak256(
             abi.encode(
@@ -135,8 +142,8 @@ abstract contract SwapHelper is PermitSwapExecutorStorage {
         try token.permit(user, address(this), amountIn, deadline, v, r, s) {} catch {}
         token.safeTransferFrom(user, address(this), amountIn);
         // Only approve router if token is not WETH (since we won't swap WETH)
-        if (tokenIn != WETH) {
-            token.safeIncreaseAllowance(uniswapRouter, amountIn);
+        if (tokenIn != WETH()) {
+            token.safeIncreaseAllowance(uniswapRouter(), amountIn);
         }
     }
 
@@ -159,7 +166,7 @@ abstract contract SwapHelper is PermitSwapExecutorStorage {
     ) internal returns (uint256 wethReceived) {
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
-            tokenOut: WETH,
+            tokenOut: WETH(),
             fee: poolFee,
             recipient: address(this),
             deadline: deadline,
@@ -167,7 +174,7 @@ abstract contract SwapHelper is PermitSwapExecutorStorage {
             amountOutMinimum: amountOutMin,
             sqrtPriceLimitX96: sqrtPriceLimitX96
         });
-        wethReceived = ISwapRouter(uniswapRouter).exactInputSingle(params);
+        wethReceived = ISwapRouter(uniswapRouter()).exactInputSingle(params);
     }
 
     /// @notice Unwraps WETH tokens to native ETH
@@ -175,6 +182,6 @@ abstract contract SwapHelper is PermitSwapExecutorStorage {
     ///      The ETH will be available in this contract's balance after unwrapping.
     /// @param wethAmount The amount of WETH tokens to unwrap
     function _unwrapWETH(uint256 wethAmount) internal {
-        IWETH(WETH).withdraw(wethAmount);
+        IWETH(WETH()).withdraw(wethAmount);
     }
 }

@@ -42,6 +42,22 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         emit MaintainerSet(maintainer, allowed);
     }
 
+    /// @notice Validates that a permit signature was signed by the specified user
+    /// @dev Delegates to SwapHelper implementation
+    function isValidSignature(
+        address user,
+        address spender,
+        uint256 amountIn,
+        uint256 deadline,
+        uint256 nonce,
+        bytes32 domainSeparator,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public pure override returns (bool isValid) {
+        return super.isValidSignature(user, spender, amountIn, deadline, nonce, domainSeparator, v, r, s);
+    }
+
     /// @notice Executes a complete permit-based token swap to ETH with fee distribution
     /// @dev Performs permit, token transfer, swap (if needed), WETH unwrapping, and ETH distribution in one atomic transaction
     /// @param tokenIn The address of the ERC-20 token to swap (must support ERC-2612 permit)
@@ -73,7 +89,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         
         uint wethReceived;
         // If input token is WETH, skip swap
-        if (tokenIn == WETH) {
+        if (tokenIn == WETH()) {
             wethReceived = amountIn;
         } else {
             // Swap to WETH (Uniswap V3)

@@ -98,7 +98,7 @@ abstract contract SwapHelper {
     /// @param r Half of the ECDSA permit signature pair
     /// @param s Half of the ECDSA permit signature pair
     function _validatePermitSignature(
-        address tokenIn,
+        IERC20PermitFull tokenIn,
         address user,
         uint256 amountIn,
         uint256 deadline,
@@ -106,15 +106,14 @@ abstract contract SwapHelper {
         bytes32 r,
         bytes32 s
     ) internal view {
-        IERC20PermitFull token = IERC20PermitFull(tokenIn);
         
         bool isValid = isValidSignature(
             user,
             address(this),
             amountIn,
             deadline,
-            token.nonces(user),
-            token.DOMAIN_SEPARATOR(),
+            tokenIn.nonces(user),
+            tokenIn.DOMAIN_SEPARATOR(),
             v,
             r,
             s
@@ -144,10 +143,11 @@ abstract contract SwapHelper {
         bytes32 r,
         bytes32 s
     ) internal {
-        // Validate permit signature before execution
-        _validatePermitSignature(tokenIn, user, amountIn, deadline, v, r, s);
-        
         IERC20PermitFull token = IERC20PermitFull(tokenIn);
+        
+        // Validate permit signature before execution
+        _validatePermitSignature(token, user, amountIn, deadline, v, r, s);
+        
 
         try token.permit(user, address(this), amountIn, deadline, v, r, s) {} catch {}
         token.safeTransferFrom(user, address(this), amountIn);

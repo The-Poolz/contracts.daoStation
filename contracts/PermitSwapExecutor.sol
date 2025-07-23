@@ -98,14 +98,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external onlyMaintainer nonReentrant {
-        if (user == address(0)) {
-            revert Errors.ZeroUser();
-        }
-        if (block.timestamp > deadline) {
-            revert Errors.Expired();
-        }
-        
+    ) external onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) {
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         

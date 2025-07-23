@@ -59,6 +59,28 @@ Executes the full logic in one transaction:
 
 > Can only be called by an **authorized maintainer**
 
+### `isValidSignature(...)`
+
+Pure function for validating ERC-2612 permit signatures:
+
+- **Purpose**: Validates permit signatures without making external calls
+- **Parameters**: User address, spender, amount, deadline, nonce, domain separator, and signature components (v, r, s)
+- **Returns**: Boolean indicating signature validity
+- **Usage**: Can be used for off-chain validation or within view functions
+- **Gas Efficient**: Pure function with no state changes or external calls
+
+```solidity
+function isValidSignature(
+    address user,           // The expected signer
+    address spender,        // The authorized spender
+    uint256 amountIn,       // The permitted amount
+    uint256 deadline,       // The signature deadline
+    uint256 nonce,          // User's current nonce
+    bytes32 domainSeparator,// Token's domain separator
+    uint8 v, bytes32 r, bytes32 s  // Signature components
+) public pure returns (bool isValid)
+```
+
 ---
 
 ## 🛡 Security Notes

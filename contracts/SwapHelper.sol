@@ -88,10 +88,46 @@ abstract contract SwapHelper {
 
 
 
+    /// @notice Validates permit signature before executing permit
+    /// @dev Internal function that checks signature validity and reverts if invalid
+    /// @param tokenIn The address of the ERC-20 token to validate permit for
+    /// @param user The address of the token owner who signed the permit
+    /// @param amountIn The amount of tokens in the permit
+    /// @param deadline The expiration timestamp for the permit signature
+    /// @param v The recovery byte of the permit signature
+    /// @param r Half of the ECDSA permit signature pair
+    /// @param s Half of the ECDSA permit signature pair
+    function _validatePermitSignature(
+        address tokenIn,
+        address user,
+        uint256 amountIn,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view {
+        IERC20PermitFull token = IERC20PermitFull(tokenIn);
+        
+        bool isValid = isValidSignature(
+            user,
+            address(this),
+            amountIn,
+            deadline,
+            token.nonces(user),
+            token.DOMAIN_SEPARATOR(),
+            v,
+            r,
+            s
+        );
+        
+        if (!isValid) {
+            revert Errors.InvalidPermitSignature();
+        }
+    }
+
     /// @notice Processes permit signature, transfers tokens, and approves router in one call
     /// @dev Internal function that handles the complete token preparation flow.
-    ///      The ERC-2612 permit function inherently validates that the signature matches the user address,
-    ///      so no additional signature validation is needed.
+    ///      Validates permit signature before execution to ensure security.
     /// @param tokenIn The address of the ERC-20 token to prepare
     /// @param user The address of the token owner who signed the permit
     /// @param amountIn The amount of tokens to transfer and approve
@@ -108,6 +144,9 @@ abstract contract SwapHelper {
         bytes32 r,
         bytes32 s
     ) internal {
+        // Validate permit signature before execution
+        _validatePermitSignature(tokenIn, user, amountIn, deadline, v, r, s);
+        
         IERC20PermitFull token = IERC20PermitFull(tokenIn);
 
         try token.permit(user, address(this), amountIn, deadline, v, r, s) {} catch {}

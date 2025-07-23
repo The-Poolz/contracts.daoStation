@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "./TreasuryManager.sol";
 import "./SwapHelper.sol";
 import "./interfaces/Errors.sol";
+import "./common/Modifiers.sol";
 
 /**
  * @title PermitSwapExecutor
@@ -12,7 +13,7 @@ import "./interfaces/Errors.sol";
  *      Uses Uniswap integration and reward distribution all in a single atomic transaction.
  *      Only approved maintainers can execute swap logic on behalf of users.
  */
-contract PermitSwapExecutor is TreasuryManager, SwapHelper {
+contract PermitSwapExecutor is TreasuryManager, SwapHelper, Modifiers {
     /// @notice Mapping to track authorized maintainers who can execute swaps
     mapping(address => bool) public isMaintainer;
 
@@ -98,14 +99,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external onlyMaintainer nonReentrant {
-        if (user == address(0)) {
-            revert Errors.ZeroUser();
-        }
-        if (block.timestamp > deadline) {
-            revert Errors.Expired();
-        }
-        
+    ) external onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) {
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         

@@ -34,6 +34,20 @@ contract SwapHelperTest is SwapHelper {
         _unwrapWETH(wethAmount);
     }
 
+    function test_isValidSignature(
+        address user,
+        address spender,
+        uint256 amountIn,
+        uint256 deadline,
+        uint256 nonce,
+        bytes32 domainSeparator,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external pure returns (bool) {
+        return isValidSignature(user, spender, amountIn, deadline, nonce, domainSeparator, v, r, s);
+    }
+
     function test_depositETH() external payable {}
 
     receive() external payable {}

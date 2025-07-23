@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/IERC20PermitFull.sol";
 import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IWETH.sol";
@@ -38,12 +39,94 @@ abstract contract SwapHelper {
         WETH = ISwapRouter(_uniswapRouter).WETH9();
     }
 
+    /// @notice Validates that a permit signature was signed by the specified user
+    /// @dev This is a pure function that reconstructs the ERC-2612 permit hash and recovers the signer address
+    /// @param user The address that should have signed the permit
+    /// @param spender The address authorized to spend tokens (should be the contract address)
+    /// @param amountIn The amount authorized to spend
+    /// @param deadline The expiration timestamp for the permit
+    /// @param nonce The current nonce for the user (passed from outside to maintain purity)
+    /// @param domainSeparator The domain separator for the token (passed from outside to maintain purity)
+    /// @param v The recovery byte of the permit signature
+    /// @param r Half of the ECDSA permit signature pair  
+    /// @param s Half of the ECDSA permit signature pair
+    /// @return isValid Whether the signature is valid for the given parameters
+    function isValidSignature(
+        address user,
+        address spender,
+        uint256 amountIn,
+        uint256 deadline,
+        uint256 nonce,
+        bytes32 domainSeparator,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public pure returns (bool isValid) {
+        // Reconstruct the ERC-2612 permit hash
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
+                user,
+                spender,
+                amountIn,
+                nonce,
+                deadline
+            )
+        );
+        
+        // Create the final hash according to EIP-712
+        bytes32 hash = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator, structHash)
+        );
+        
+        // Recover the signer address from the signature
+        address recoveredSigner = ECDSA.recover(hash, v, r, s);
+        
+        // Return whether the recovered signer matches the provided user address
+        return recoveredSigner == user;
+    }
 
+
+
+    /// @notice Validates permit signature before executing permit
+    /// @dev Internal function that checks signature validity and reverts if invalid
+    /// @param tokenIn The address of the ERC-20 token to validate permit for
+    /// @param user The address of the token owner who signed the permit
+    /// @param amountIn The amount of tokens in the permit
+    /// @param deadline The expiration timestamp for the permit signature
+    /// @param v The recovery byte of the permit signature
+    /// @param r Half of the ECDSA permit signature pair
+    /// @param s Half of the ECDSA permit signature pair
+    function _validatePermitSignature(
+        IERC20PermitFull tokenIn,
+        address user,
+        uint256 amountIn,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view {
+        
+        bool isValid = isValidSignature(
+            user,
+            address(this),
+            amountIn,
+            deadline,
+            tokenIn.nonces(user),
+            tokenIn.DOMAIN_SEPARATOR(),
+            v,
+            r,
+            s
+        );
+        
+        if (!isValid) {
+            revert Errors.InvalidPermitSignature();
+        }
+    }
 
     /// @notice Processes permit signature, transfers tokens, and approves router in one call
     /// @dev Internal function that handles the complete token preparation flow.
-    ///      The ERC-2612 permit function inherently validates that the signature matches the user address,
-    ///      so no additional signature validation is needed.
+    ///      Validates permit signature before execution to ensure security.
     /// @param tokenIn The address of the ERC-20 token to prepare
     /// @param user The address of the token owner who signed the permit
     /// @param amountIn The amount of tokens to transfer and approve
@@ -61,6 +144,10 @@ abstract contract SwapHelper {
         bytes32 s
     ) internal {
         IERC20PermitFull token = IERC20PermitFull(tokenIn);
+        
+        // Validate permit signature before execution
+        _validatePermitSignature(token, user, amountIn, deadline, v, r, s);
+        
 
         try token.permit(user, address(this), amountIn, deadline, v, r, s) {} catch {}
         token.safeTransferFrom(user, address(this), amountIn);

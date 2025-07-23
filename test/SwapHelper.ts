@@ -215,4 +215,251 @@ describe("SwapHelper", function () {
       )
     ).to.be.reverted; // Will be rejected by permit function, not our custom error
   });
+
+  describe("isValidSignature", function () {
+    it("should validate correct permit signature", async function () {
+      const amount = hardhat.ethers.parseEther("100");
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+      const nonce = await token.nonces(user.address);
+      const domainSeparator = await token.DOMAIN_SEPARATOR();
+      
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: 31337,
+        verifyingContract: await token.getAddress()
+      };
+
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+
+      const value = {
+        owner: user.address,
+        spender: await swapTest.getAddress(),
+        value: amount,
+        nonce: nonce,
+        deadline: deadline
+      };
+
+      const signature = await user.signTypedData(domain, types, value);
+      const { v, r, s } = hardhat.ethers.Signature.from(signature);
+
+      const isValid = await swapTest.test_isValidSignature(
+        user.address,
+        await swapTest.getAddress(),
+        amount,
+        deadline,
+        nonce,
+        domainSeparator,
+        v,
+        r,
+        s
+      );
+
+      expect(isValid).to.be.true;
+    });
+
+    it("should reject invalid permit signature with wrong signer", async function () {
+      const amount = hardhat.ethers.parseEther("100");
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+      const nonce = await token.nonces(user.address);
+      const domainSeparator = await token.DOMAIN_SEPARATOR();
+
+      // Create signature with wrong signer
+      const [wrongSigner] = await hardhat.ethers.getSigners();
+      
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: 31337,
+        verifyingContract: await token.getAddress()
+      };
+
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+
+      const value = {
+        owner: user.address,
+        spender: await swapTest.getAddress(),
+        value: amount,
+        nonce: nonce,
+        deadline: deadline
+      };
+
+      const signature = await wrongSigner.signTypedData(domain, types, value);
+      const { v, r, s } = hardhat.ethers.Signature.from(signature);
+
+      const isValid = await swapTest.test_isValidSignature(
+        user.address,
+        await swapTest.getAddress(),
+        amount,
+        deadline,
+        nonce,
+        domainSeparator,
+        v,
+        r,
+        s
+      );
+
+      expect(isValid).to.be.false;
+    });
+
+    it("should reject signature with wrong parameters", async function () {
+      const amount = hardhat.ethers.parseEther("100");
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+      const nonce = await token.nonces(user.address);
+      const domainSeparator = await token.DOMAIN_SEPARATOR();
+      
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: 31337,
+        verifyingContract: await token.getAddress()
+      };
+
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+
+      const value = {
+        owner: user.address,
+        spender: await swapTest.getAddress(),
+        value: amount,
+        nonce: nonce,
+        deadline: deadline
+      };
+
+      const signature = await user.signTypedData(domain, types, value);
+      const { v, r, s } = hardhat.ethers.Signature.from(signature);
+
+      // Test with wrong amount
+      const isValidWrongAmount = await swapTest.test_isValidSignature(
+        user.address,
+        await swapTest.getAddress(),
+        hardhat.ethers.parseEther("50"), // Wrong amount
+        deadline,
+        nonce,
+        domainSeparator,
+        v,
+        r,
+        s
+      );
+      expect(isValidWrongAmount).to.be.false;
+
+      // Test with wrong spender
+      const [, , wrongSpender] = await hardhat.ethers.getSigners();
+      const isValidWrongSpender = await swapTest.test_isValidSignature(
+        user.address,
+        wrongSpender.address, // Wrong spender
+        amount,
+        deadline,
+        nonce,
+        domainSeparator,
+        v,
+        r,
+        s
+      );
+      expect(isValidWrongSpender).to.be.false;
+
+      // Test with wrong nonce
+      const isValidWrongNonce = await swapTest.test_isValidSignature(
+        user.address,
+        await swapTest.getAddress(),
+        amount,
+        deadline,
+        nonce + 1n, // Wrong nonce
+        domainSeparator,
+        v,
+        r,
+        s
+      );
+      expect(isValidWrongNonce).to.be.false;
+    });
+
+    it("should work with different domain separators", async function () {
+      const amount = hardhat.ethers.parseEther("100");
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+      const nonce = await token.nonces(user.address);
+      
+      // Create a different domain separator (simulating different token)
+      const wrongDomainSeparator = hardhat.ethers.keccak256(hardhat.ethers.toUtf8Bytes("wrong domain"));
+      
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: 31337,
+        verifyingContract: await token.getAddress()
+      };
+
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+
+      const value = {
+        owner: user.address,
+        spender: await swapTest.getAddress(),
+        value: amount,
+        nonce: nonce,
+        deadline: deadline
+      };
+
+      const signature = await user.signTypedData(domain, types, value);
+      const { v, r, s } = hardhat.ethers.Signature.from(signature);
+
+      // Test with wrong domain separator should fail
+      const isValidWrongDomain = await swapTest.test_isValidSignature(
+        user.address,
+        await swapTest.getAddress(),
+        amount,
+        deadline,
+        nonce,
+        wrongDomainSeparator,
+        v,
+        r,
+        s
+      );
+      expect(isValidWrongDomain).to.be.false;
+
+      // Test with correct domain separator should pass
+      const correctDomainSeparator = await token.DOMAIN_SEPARATOR();
+      const isValidCorrectDomain = await swapTest.test_isValidSignature(
+        user.address,
+        await swapTest.getAddress(),
+        amount,
+        deadline,
+        nonce,
+        correctDomainSeparator,
+        v,
+        r,
+        s
+      );
+      expect(isValidCorrectDomain).to.be.true;
+    });
+  });
 });

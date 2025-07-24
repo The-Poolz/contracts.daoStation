@@ -87,7 +87,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         _unwrapWETH(wethReceived);
         
         // Distribute ETH (configurable fees to maintainer and treasury, rest to user)
-        (uint256 treasuryFee, uint256 userAmt, uint256 maintainerAmt) = _distributeETH(wethReceived, user, msg.sender);
+        (uint256 treasuryFee, uint256 userAmt, uint256 maintainerAmt) = _distributeETH(wethReceived, user);
         
         emit SwapExecuted(user, tokenIn, amountIn, wethReceived, userAmt, maintainerAmt, treasuryFee, data, msg.sender);
     }

@@ -87,19 +87,10 @@ abstract contract SwapHelper is TreasuryManager{
         }
     }
 
-    /// @notice Validates that commands and inputs contain valid data for WETH swap
-    /// @dev Internal function that checks commands and inputs are not empty and path ends with WETH
-    /// @param commands The encoded commands for UniversalRouter
+    /// @notice Validates that inputs contain valid data for WETH swap
+    /// @dev Internal function that checks inputs are not empty and path ends with WETH
     /// @param inputs The encoded inputs array for UniversalRouter commands
-    function _validateSwapParams(bytes memory commands, bytes[] memory inputs) internal view {
-        if (commands.length == 0) {
-            revert Errors.InvalidSwapCommands();
-        }
-        
-        if (inputs.length == 0) {
-            revert Errors.InvalidSwapInputs();
-        }
-        
+    function _validateInputParams(bytes[] memory inputs) internal view {
         // Decode the first input to get the path and validate WETH is the output token
         (, , , bytes memory path, ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
         
@@ -141,7 +132,7 @@ abstract contract SwapHelper is TreasuryManager{
         uint256 deadline
     ) internal returns (uint256 wethReceived) {
         // Validate commands, inputs, and path contain WETH as output
-        _validateSwapParams(commands, inputs);
+        _validateInputParams(inputs);
         
         // Get initial WETH balance
         uint256 initialWETHBalance = IERC20PermitFull(WETH).balanceOf(address(this));

@@ -27,7 +27,6 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     /// @param _weth The address of the WETH contract
     /// @param initialOwner The address that will be set as the contract owner
     constructor(address _universalRouter, address _weth, address initialOwner) 
-        PermitSwapExecutorState(_universalRouter, _weth)
         Ownable(initialOwner) 
     {
         if (_universalRouter == address(0)) {
@@ -36,6 +35,8 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         if (_weth == address(0)) {
             revert Errors.ZeroWETHAddress();
         }
+        universalRouter = _universalRouter;
+        WETH = _weth;
     }
 
     /// @notice Sets the authorization status for a maintainer
@@ -68,15 +69,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external override onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) {
-        // Validate commands and inputs are not empty before proceeding
-        if (commands.length == 0) {
-            revert Errors.InvalidSwapCommands();
-        }
-        if (inputs.length == 0) {
-            revert Errors.InvalidSwapInputs();
-        }
-        
+    ) external override onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) nonEmptyCommands(commands) nonEmptyInputs(inputs) {
         // Extract amountIn from the inputs to prepare the token
         (, uint256 amountIn, , , ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
         

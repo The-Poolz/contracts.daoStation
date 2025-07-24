@@ -48,4 +48,24 @@ abstract contract Modifiers {
         }
         _;
     }
+
+    /// @notice Validates that the commands array is not empty
+    /// @dev Reverts with InvalidSwapCommands error if the commands array is empty
+    /// @param commands The commands array to validate
+    modifier nonEmptyCommands(bytes memory commands) {
+        if (commands.length == 0) {
+            revert Errors.InvalidSwapCommands();
+        }
+        _;
+    }
+
+    /// @notice Validates that the inputs array is not empty
+    /// @dev Reverts with InvalidSwapInputs error if the inputs array is empty
+    /// @param inputs The inputs array to validate
+    modifier nonEmptyInputs(bytes[] memory inputs) {
+        if (inputs.length == 0) {
+            revert Errors.InvalidSwapInputs();
+        }
+        _;
+    }
 }

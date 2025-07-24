@@ -5,9 +5,10 @@ import "../TreasuryManager.sol";
 
 contract TreasuryManagerTest is TreasuryManager {
     constructor(address universalRouterAddress, address wethAddress, address initialOwner) 
-        PermitSwapExecutorState(universalRouterAddress, wethAddress)
         Ownable(initialOwner) 
     {
+        universalRouter = universalRouterAddress;
+        WETH = wethAddress;
         // Constructor now properly calls parent constructors to set immutable variables
     }
 

@@ -5,12 +5,13 @@ import "../SwapHelper.sol";
 
 contract SwapHelperTest is SwapHelper {
     constructor(address universalRouterAddress, address wethAddress, address initialOwner) 
-        PermitSwapExecutorState(universalRouterAddress, wethAddress)
         Ownable(initialOwner) 
     {
         if (universalRouterAddress == address(0)) {
             revert Errors.ZeroRouterAddress();
         }
+        universalRouter = universalRouterAddress;
+        WETH = wethAddress;
         // Constructor now properly calls parent constructors to set immutable variables
     }
 

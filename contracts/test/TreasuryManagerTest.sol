@@ -4,12 +4,11 @@ pragma solidity ^0.8.20;
 import "../TreasuryManager.sol";
 
 contract TreasuryManagerTest is TreasuryManager {
-    constructor(address uniswapRouterAddress, address wethAddress, address initialOwner) 
+    constructor(address universalRouterAddress, address wethAddress, address initialOwner) 
+        PermitSwapExecutorState(universalRouterAddress, wethAddress)
         Ownable(initialOwner) 
     {
-        // Set the immutable variables
-        uniswapRouter = uniswapRouterAddress;
-        WETH = wethAddress;
+        // Constructor now properly calls parent constructors to set immutable variables
     }
 
     // Implement required interface functions as dummy implementations for testing

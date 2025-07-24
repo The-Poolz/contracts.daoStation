@@ -15,7 +15,7 @@ import "./TreasuryManager.sol";
  *      - Uniswap V3 token swaps to WETH
  *      - WETH unwrapping to ETH
  *      Works with any ERC-20 token that supports ERC-2612 permit functionality.
- *      Expects the inheriting contract to provide uniswapRouter and WETH variables.
+ *      Expects the inheriting contract to provide universalRouter and WETH variables.
  */
 abstract contract SwapHelper is TreasuryManager{
     using SafeERC20 for IERC20PermitFull;

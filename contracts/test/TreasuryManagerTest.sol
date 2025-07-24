@@ -33,8 +33,7 @@ contract TreasuryManagerTest is TreasuryManager {
 
     function test_distributeETH(
         uint256 ethBalance,
-        address user,
-        address maintainer
+        address user
     )
         external
         returns (
@@ -43,7 +42,7 @@ contract TreasuryManagerTest is TreasuryManager {
             uint256 maintainerAmount
         )
     {
-        return _distributeETH(ethBalance, user, maintainer);
+        return _distributeETH(ethBalance, user);
     }
 
     function test_depositETH() external payable {}

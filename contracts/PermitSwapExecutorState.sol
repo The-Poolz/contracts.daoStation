@@ -45,6 +45,14 @@ abstract contract PermitSwapExecutorState is
     /// @dev Retrieved from the Uniswap router and used as the target token for swaps
     address public immutable WETH;
 
+    /// @notice Constructor to initialize immutable router and WETH addresses
+    /// @param _universalRouter The address of the Universal Router contract
+    /// @param _weth The address of the WETH contract
+    constructor(address _universalRouter, address _weth) {
+        universalRouter = _universalRouter;
+        WETH = _weth;
+    }
+
     /// @notice Returns the current treasury balance
     /// @dev The treasury balance is the contract's ETH balance
     /// @return The amount of ETH currently held in the treasury

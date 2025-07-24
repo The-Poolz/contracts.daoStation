@@ -57,15 +57,22 @@ contract MockUniversalRouter is IUniversalRouter {
         require(!payerIsUser, "PayerIsUser must be false for this mock");
         
         // Decode the path to get tokenIn and tokenOut
-        // Path format: tokenIn (20 bytes) + fee (3 bytes) + tokenOut (20 bytes)
-        require(path.length >= 43, "Invalid path length");
+        // Path format: tokenIn (20 bytes) + fee (3 bytes) + tokenOut (20 bytes) = 43 bytes total
+        require(path.length == 43, "Invalid path length");
         
-        address tokenIn;
-        address tokenOut;
-        assembly {
-            tokenIn := div(mload(add(path, 32)), 0x1000000000000000000000000)
-            tokenOut := div(mload(add(path, 55)), 0x1000000000000000000000000)
+        // Extract tokenIn from bytes 0-19
+        bytes memory tokenInBytes = new bytes(20);
+        for (uint256 i = 0; i < 20; i++) {
+            tokenInBytes[i] = path[i];
         }
+        address tokenIn = bytesToAddress(tokenInBytes);
+        
+        // Extract tokenOut from bytes 23-42 (skip the 3-byte fee)
+        bytes memory tokenOutBytes = new bytes(20);
+        for (uint256 i = 0; i < 20; i++) {
+            tokenOutBytes[i] = path[i + 23];
+        }
+        address tokenOut = bytesToAddress(tokenOutBytes);
         
         // Transfer input token from msg.sender (the contract calling this)
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
@@ -76,5 +83,15 @@ contract MockUniversalRouter is IUniversalRouter {
         
         // Transfer output token to recipient
         require(IERC20(tokenOut).transfer(recipient, amountOut), "Output token transfer failed");
+    }
+    
+    /// @notice Helper function to convert bytes to address
+    /// @param _bytes The bytes to convert (must be 20 bytes)
+    /// @return addr The resulting address
+    function bytesToAddress(bytes memory _bytes) internal pure returns (address addr) {
+        require(_bytes.length == 20, "Invalid bytes length for address");
+        assembly {
+            addr := mload(add(_bytes, 20))
+        }
     }
 }

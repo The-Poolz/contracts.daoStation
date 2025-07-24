@@ -112,9 +112,16 @@ abstract contract SwapHelper is TreasuryManager{
             revert Errors.InvalidSwapPath();
         }
         
+        // Extract the last 20 bytes of the path (output token)
+        // Convert the last 20 bytes to an address
+        bytes memory lastBytes = new bytes(20);
+        for (uint256 i = 0; i < 20; i++) {
+            lastBytes[i] = path[path.length - 20 + i];
+        }
+        
         address outputToken;
         assembly {
-            outputToken := mload(add(add(path, 0x20), sub(mload(path), 20)))
+            outputToken := mload(add(lastBytes, 20))
         }
         
         if (outputToken != WETH) {

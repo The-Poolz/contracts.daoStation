@@ -14,9 +14,9 @@ describe("TreasuryManager Fee Configuration", function () {
     const weth = await MockWETH9.deploy();
     await weth.waitForDeployment();
 
-    // Deploy mock Universal Router
+    // Deploy mock Universal Router with WETH address
     const MockUniversalRouter = await ethers.getContractFactory("MockUniversalRouter");
-    const router = await MockUniversalRouter.deploy();
+    const router = await MockUniversalRouter.deploy(await weth.getAddress());
     await router.waitForDeployment();
 
     const TreasuryManagerTest = await ethers.getContractFactory("TreasuryManagerTest");

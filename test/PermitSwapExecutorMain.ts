@@ -449,7 +449,7 @@ describe("PermitSwapExecutor Main Contract", function () {
       const validInputs = [
         hardhat.ethers.AbiCoder.defaultAbiCoder().encode(
           ["address", "uint256", "uint256", "bytes", "bool"],
-          [await executor.getAddress(), tokenAmount, hardhat.ethers.parseEther("0.9"), "0x123456789012345678901234567890123456789012345678901234567890123456789012345", false]
+          [await executor.getAddress(), tokenAmount, hardhat.ethers.parseEther("0.9"), "0x1234", false]
         )
       ];
       
@@ -580,11 +580,10 @@ describe("PermitSwapExecutor Main Contract", function () {
       )).to.be.revertedWithCustomError(executor, "InvalidOutputToken");
     });
     });
-  });
-
+    
   describe("Treasury Functions", function () {
-    it("should allow owner to withdraw treasury", async function () {
-      // Send some ETH to contract
+      it("should allow owner to withdraw treasury", async function () {
+        // Send some ETH to contract
       await owner.sendTransaction({
         to: await executor.getAddress(),
         value: hardhat.ethers.parseEther("1")

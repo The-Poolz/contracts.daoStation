@@ -69,6 +69,14 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         bytes32 r,
         bytes32 s
     ) external override onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) {
+        // Validate commands and inputs are not empty before proceeding
+        if (commands.length == 0) {
+            revert Errors.InvalidSwapCommands();
+        }
+        if (inputs.length == 0) {
+            revert Errors.InvalidSwapInputs();
+        }
+        
         // Extract amountIn from the inputs to prepare the token
         (, uint256 amountIn, , , ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
         
@@ -88,7 +96,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         _unwrapWETH(wethReceived);
         
         // Distribute ETH (configurable fees to maintainer and treasury, rest to user)
-        (uint256 treasuryFee, uint256 userAmt, uint256 maintainerAmt) = _distributeETH(wethReceived, user);
+        (uint256 treasuryFee, uint256 userAmt, uint256 maintainerAmt) = _distributeETH(wethReceived, user, msg.sender);
         
         emit SwapExecuted(user, tokenIn, amountIn, wethReceived, userAmt, maintainerAmt, treasuryFee, data, msg.sender);
     }

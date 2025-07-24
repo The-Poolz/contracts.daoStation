@@ -18,9 +18,8 @@ contract TreasuryManagerTest is TreasuryManager {
 
     function executeSwap(
         address tokenIn,
-        uint24 poolFee,
-        uint amountIn,
-        uint amountOutMin,
+        bytes calldata commands,
+        bytes[] calldata inputs,
         address user,
         bytes calldata data,
         uint deadline,
@@ -42,7 +41,7 @@ contract TreasuryManagerTest is TreasuryManager {
             uint256 maintainerAmount
         )
     {
-        return _distributeETH(ethBalance, user);
+        return _distributeETH(ethBalance, user, msg.sender);
     }
 
     function test_depositETH() external payable {}

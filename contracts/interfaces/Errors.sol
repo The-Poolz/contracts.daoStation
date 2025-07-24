@@ -35,4 +35,16 @@ interface Errors {
     
     /// @notice Thrown when permit signature is invalid
     error InvalidPermitSignature();
+    
+    /// @notice Thrown when swap commands are empty or invalid
+    error InvalidSwapCommands();
+    
+    /// @notice Thrown when swap inputs are empty or invalid
+    error InvalidSwapInputs();
+    
+    /// @notice Thrown when swap path is empty or invalid
+    error InvalidSwapPath();
+    
+    /// @notice Thrown when output token is not WETH
+    error InvalidOutputToken();
 }

@@ -87,40 +87,57 @@ abstract contract SwapHelper is TreasuryManager{
         }
     }
 
-    /// @notice Executes a Uniswap V3 exact input swap from any token to WETH using UniversalRouter
-    /// @dev Internal function that performs a single-hop swap using UniversalRouter's execute function
-    /// @param tokenIn The address of the input token to swap from
-    /// @param poolFee The fee tier of the Uniswap V3 pool (e.g., 3000 for 0.3%)
-    /// @param amountIn The exact amount of input tokens to swap
-    /// @param amountOutMin The minimum amount of WETH to receive (slippage protection)
+    /// @notice Validates that commands and inputs contain valid data for WETH swap
+    /// @dev Internal function that checks commands and inputs are not empty and path ends with WETH
+    /// @param commands The encoded commands for UniversalRouter
+    /// @param inputs The encoded inputs array for UniversalRouter commands
+    function _validateSwapParams(bytes memory commands, bytes[] memory inputs) internal view {
+        if (commands.length == 0) {
+            revert Errors.InvalidSwapCommands();
+        }
+        
+        if (inputs.length == 0) {
+            revert Errors.InvalidSwapInputs();
+        }
+        
+        // Decode the first input to get the path and validate WETH is the output token
+        (, , , bytes memory path, ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
+        
+        if (path.length == 0) {
+            revert Errors.InvalidSwapPath();
+        }
+        
+        // Path should end with WETH (last 20 bytes)
+        if (path.length < 20) {
+            revert Errors.InvalidSwapPath();
+        }
+        
+        address outputToken;
+        assembly {
+            outputToken := mload(add(add(path, 0x20), sub(mload(path), 20)))
+        }
+        
+        if (outputToken != WETH) {
+            revert Errors.InvalidOutputToken();
+        }
+    }
+
+    /// @notice Executes a Uniswap swap to WETH using UniversalRouter with external commands and inputs
+    /// @dev Internal function that performs swap using provided commands and inputs with validation
+    /// @param commands The encoded commands for UniversalRouter execution
+    /// @param inputs The encoded inputs array corresponding to the commands
     /// @param deadline The expiration timestamp for the swap transaction
     /// @return wethReceived The actual amount of WETH tokens received from the swap
     function _swapToWETH(
-        address tokenIn,
-        uint24 poolFee,
-        uint256 amountIn,
-        uint256 amountOutMin,
+        bytes memory commands,
+        bytes[] memory inputs,
         uint256 deadline
     ) internal returns (uint256 wethReceived) {
+        // Validate commands, inputs, and path contain WETH as output
+        _validateSwapParams(commands, inputs);
+        
         // Get initial WETH balance
         uint256 initialWETHBalance = IERC20PermitFull(WETH).balanceOf(address(this));
-        
-        // Encode the path for Uniswap V3: tokenIn -> poolFee -> WETH
-        bytes memory path = abi.encodePacked(tokenIn, poolFee, WETH);
-        
-        // Create command (V3_SWAP_EXACT_IN = 0x00)
-        bytes memory commands = abi.encodePacked(uint8(0x00));
-        
-        // Encode inputs for V3_SWAP_EXACT_IN command
-        // Parameters: (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
-        bytes[] memory inputs = new bytes[](1);
-        inputs[0] = abi.encode(
-            address(this),  // recipient: this contract receives the WETH
-            amountIn,       // amountIn: exact amount of input tokens
-            amountOutMin,   // amountOutMin: minimum output amount for slippage protection
-            path,           // path: encoded path for the swap
-            false           // payerIsUser: false since tokens are already in this contract
-        );
         
         // Execute the swap through UniversalRouter
         IUniversalRouter(universalRouter).execute(commands, inputs, deadline);

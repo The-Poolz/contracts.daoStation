@@ -52,9 +52,8 @@ interface IPermitSwapExecutor {
 
     /// @notice Executes a complete permit-based token swap to ETH with fee distribution
     /// @param tokenIn The address of the ERC-20 token to swap (must support ERC-2612 permit)
-    /// @param poolFee The Uniswap V3 pool fee for the swap (e.g., 3000 for 0.3%)
-    /// @param amountIn The amount of input tokens to swap
-    /// @param amountOutMin The minimum amount of WETH to receive from the swap (slippage protection)
+    /// @param commands The encoded commands for UniversalRouter execution
+    /// @param inputs The encoded inputs array corresponding to the commands
     /// @param user The address of the token owner who signed the permit
     /// @param data Arbitrary bytes data to be included with the swap
     /// @param deadline The expiration timestamp for the permit signature
@@ -63,9 +62,8 @@ interface IPermitSwapExecutor {
     /// @param s Half of the ECDSA permit signature pair
     function executeSwap(
         address tokenIn,
-        uint24 poolFee,
-        uint amountIn,
-        uint amountOutMin,
+        bytes calldata commands,
+        bytes[] calldata inputs,
         address user,
         bytes calldata data,
         uint deadline,

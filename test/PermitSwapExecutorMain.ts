@@ -1,6 +1,29 @@
 const hardhat = require("hardhat");
 const { expect } = require("chai");
 
+// Helper function to build swap commands and inputs
+function buildSwapParams(tokenIn: string, poolFee: number, amountIn: bigint, amountOutMin: bigint, recipient: string, wethAddress: string) {
+  // Create command (V3_SWAP_EXACT_IN = 0x00)
+  const commands = hardhat.ethers.solidityPacked(["uint8"], [0x00]);
+  
+  // Encode the path for Uniswap V3: tokenIn -> poolFee -> WETH
+  const path = hardhat.ethers.solidityPacked(
+    ["address", "uint24", "address"], 
+    [tokenIn, poolFee, wethAddress]
+  );
+  
+  // Encode inputs for V3_SWAP_EXACT_IN command
+  // Parameters: (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
+  const inputs = [
+    hardhat.ethers.AbiCoder.defaultAbiCoder().encode(
+      ["address", "uint256", "uint256", "bytes", "bool"],
+      [recipient, amountIn, amountOutMin, path, false]
+    )
+  ];
+  
+  return { commands, inputs };
+}
+
 describe("PermitSwapExecutor Main Contract", function () {
   let owner: any, maintainer: any, user: any, treasury: any;
   let executor: any, token: any, weth: any, router: any;
@@ -124,12 +147,21 @@ describe("PermitSwapExecutor Main Contract", function () {
       // Test data to send with swap
       const testData = hardhat.ethers.toUtf8Bytes("test swap data");
       
+      // Build swap parameters
+      const { commands, inputs } = buildSwapParams(
+        await token.getAddress(),
+        3000,
+        tokenAmount,
+        hardhat.ethers.parseEther("0.9"),
+        await executor.getAddress(),
+        await weth.getAddress()
+      );
+      
       // Execute swap
       await expect(executor.connect(maintainer).executeSwap(
         await token.getAddress(),
-        3000, // 0.3% fee
-        tokenAmount,
-        hardhat.ethers.parseEther("0.9"), // min out
+        commands,
+        inputs,
         user.address,
         testData,
         deadline,
@@ -197,12 +229,21 @@ describe("PermitSwapExecutor Main Contract", function () {
       // Test data to send with swap
       const testData = hardhat.ethers.toUtf8Bytes("weth swap data");
       
+      // Build swap parameters (even though no swap will happen since input is WETH)
+      const { commands, inputs } = buildSwapParams(
+        await weth.getAddress(),
+        3000,
+        wethAmount,
+        hardhat.ethers.parseEther("0.9"),
+        await executor.getAddress(),
+        await weth.getAddress()
+      );
+      
       // Execute swap with WETH as input (should skip the swap step)
       await expect(executor.connect(maintainer).executeSwap(
         await weth.getAddress(), // Using WETH as input token
-        3000, // Pool fee (irrelevant since no swap)
-        wethAmount,
-        hardhat.ethers.parseEther("0.9"), // Min out (irrelevant since no swap)
+        commands,
+        inputs,
         user.address,
         testData,
         deadline,
@@ -231,11 +272,19 @@ describe("PermitSwapExecutor Main Contract", function () {
       const tokenAmount = hardhat.ethers.parseEther("100");
       const deadline = Math.floor(Date.now() / 1000) + 3600;
       
-      await expect(executor.connect(user).executeSwap(
+      const { commands, inputs } = buildSwapParams(
         await token.getAddress(),
         3000,
         tokenAmount,
         hardhat.ethers.parseEther("0.9"),
+        await executor.getAddress(),
+        await weth.getAddress()
+      );
+      
+      await expect(executor.connect(user).executeSwap(
+        await token.getAddress(),
+        commands,
+        inputs,
         user.address,
         "0x",
         deadline,
@@ -249,11 +298,19 @@ describe("PermitSwapExecutor Main Contract", function () {
       const tokenAmount = hardhat.ethers.parseEther("100");
       const deadline = Math.floor(Date.now() / 1000) + 3600;
       
-      await expect(executor.connect(maintainer).executeSwap(
+      const { commands, inputs } = buildSwapParams(
         await token.getAddress(),
         3000,
         tokenAmount,
         hardhat.ethers.parseEther("0.9"),
+        await executor.getAddress(),
+        await weth.getAddress()
+      );
+      
+      await expect(executor.connect(maintainer).executeSwap(
+        await token.getAddress(),
+        commands,
+        inputs,
         hardhat.ethers.ZeroAddress,
         "0x",
         deadline,
@@ -267,11 +324,19 @@ describe("PermitSwapExecutor Main Contract", function () {
       const tokenAmount = hardhat.ethers.parseEther("100");
       const expiredDeadline = Math.floor(Date.now() / 1000) - 3600;
       
-      await expect(executor.connect(maintainer).executeSwap(
+      const { commands, inputs } = buildSwapParams(
         await token.getAddress(),
         3000,
         tokenAmount,
         hardhat.ethers.parseEther("0.9"),
+        await executor.getAddress(),
+        await weth.getAddress()
+      );
+      
+      await expect(executor.connect(maintainer).executeSwap(
+        await token.getAddress(),
+        commands,
+        inputs,
         user.address,
         "0x",
         expiredDeadline,
@@ -319,12 +384,20 @@ describe("PermitSwapExecutor Main Contract", function () {
       const signature = await maintainer.signTypedData(domain, types, value);
       const { v, r, s } = hardhat.ethers.Signature.from(signature);
       
-      // This should revert because the signature doesn't match the user
-      await expect(executor.connect(maintainer).executeSwap(
+      const { commands, inputs } = buildSwapParams(
         await token.getAddress(),
         3000,
         tokenAmount,
         hardhat.ethers.parseEther("0.9"),
+        await executor.getAddress(),
+        await weth.getAddress()
+      );
+      
+      // This should revert because the signature doesn't match the user
+      await expect(executor.connect(maintainer).executeSwap(
+        await token.getAddress(),
+        commands,
+        inputs,
         user.address,
         "0x",
         deadline,
@@ -332,6 +405,180 @@ describe("PermitSwapExecutor Main Contract", function () {
         r,
         s
       )).to.be.reverted;
+    });
+
+    it("should revert with empty commands", async function () {
+      const tokenAmount = hardhat.ethers.parseEther("100");
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+      
+      // Mint tokens to user
+      await token.mint(user.address, tokenAmount);
+      
+      // Create valid permit signature
+      const nonce = await token.nonces(user.address);
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: 31337,
+        verifyingContract: await token.getAddress()
+      };
+      
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+      
+      const value = {
+        owner: user.address,
+        spender: await executor.getAddress(),
+        value: tokenAmount,
+        nonce: nonce,
+        deadline: deadline
+      };
+      
+      const signature = await user.signTypedData(domain, types, value);
+      const { v, r, s } = hardhat.ethers.Signature.from(signature);
+      
+      // Empty commands should revert
+      const emptyCommands = "0x";
+      const validInputs = [
+        hardhat.ethers.AbiCoder.defaultAbiCoder().encode(
+          ["address", "uint256", "uint256", "bytes", "bool"],
+          [await executor.getAddress(), tokenAmount, hardhat.ethers.parseEther("0.9"), "0x123456789012345678901234567890123456789012345678901234567890123456789012345", false]
+        )
+      ];
+      
+      await expect(executor.connect(maintainer).executeSwap(
+        await token.getAddress(),
+        emptyCommands,
+        validInputs,
+        user.address,
+        "0x",
+        deadline,
+        v,
+        r,
+        s
+      )).to.be.revertedWithCustomError(executor, "InvalidSwapCommands");
+    });
+
+    it("should revert with empty inputs", async function () {
+      const tokenAmount = hardhat.ethers.parseEther("100");
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+      
+      // Mint tokens to user
+      await token.mint(user.address, tokenAmount);
+      
+      // Create valid permit signature
+      const nonce = await token.nonces(user.address);
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: 31337,
+        verifyingContract: await token.getAddress()
+      };
+      
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+      
+      const value = {
+        owner: user.address,
+        spender: await executor.getAddress(),
+        value: tokenAmount,
+        nonce: nonce,
+        deadline: deadline
+      };
+      
+      const signature = await user.signTypedData(domain, types, value);
+      const { v, r, s } = hardhat.ethers.Signature.from(signature);
+      
+      // Empty inputs should revert
+      const validCommands = hardhat.ethers.solidityPacked(["uint8"], [0x00]);
+      const emptyInputs: any[] = [];
+      
+      await expect(executor.connect(maintainer).executeSwap(
+        await token.getAddress(),
+        validCommands,
+        emptyInputs,
+        user.address,
+        "0x",
+        deadline,
+        v,
+        r,
+        s
+      )).to.be.revertedWithCustomError(executor, "InvalidSwapInputs");
+    });
+
+    it("should revert with invalid output token (not WETH)", async function () {
+      const tokenAmount = hardhat.ethers.parseEther("100");
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+      
+      // Mint tokens to user
+      await token.mint(user.address, tokenAmount);
+      
+      // Create valid permit signature
+      const nonce = await token.nonces(user.address);
+      const domain = {
+        name: await token.name(),
+        version: "1",
+        chainId: 31337,
+        verifyingContract: await token.getAddress()
+      };
+      
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+      
+      const value = {
+        owner: user.address,
+        spender: await executor.getAddress(),
+        value: tokenAmount,
+        nonce: nonce,
+        deadline: deadline
+      };
+      
+      const signature = await user.signTypedData(domain, types, value);
+      const { v, r, s } = hardhat.ethers.Signature.from(signature);
+      
+      // Build swap parameters with wrong output token
+      const { commands, inputs } = buildSwapParams(
+        await token.getAddress(),
+        3000,
+        tokenAmount,
+        hardhat.ethers.parseEther("0.9"),
+        await executor.getAddress(),
+        await token.getAddress() // Using token address instead of WETH
+      );
+      
+      await expect(executor.connect(maintainer).executeSwap(
+        await token.getAddress(),
+        commands,
+        inputs,
+        user.address,
+        "0x",
+        deadline,
+        v,
+        r,
+        s
+      )).to.be.revertedWithCustomError(executor, "InvalidOutputToken");
+    });
     });
   });
 

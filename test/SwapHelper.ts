@@ -28,9 +28,9 @@ describe("SwapHelper", function () {
     token = await MockERC20Permit.deploy("MockToken", "MTK", 18);
     await token.waitForDeployment();
 
-    // Deploy mock Uniswap V3 router
-    const MockSwapRouter = await hardhat.ethers.getContractFactory("MockSwapRouterV3");
-    router = await MockSwapRouter.deploy(await weth.getAddress());
+    // Deploy mock Universal Router
+    const MockUniversalRouter = await hardhat.ethers.getContractFactory("MockUniversalRouter");
+    router = await MockUniversalRouter.deploy(await weth.getAddress());
     await router.waitForDeployment();
 
     const SwapHelperTest = await hardhat.ethers.getContractFactory("SwapHelperTest");

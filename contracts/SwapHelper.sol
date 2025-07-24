@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IERC20PermitFull.sol";
 import "./interfaces/IWETH.sol";
+import "./interfaces/IUniversalRouter.sol";
 import "./TreasuryManager.sol";
 
 /**
@@ -82,17 +83,18 @@ abstract contract SwapHelper is TreasuryManager{
         token.safeTransferFrom(user, address(this), amountIn);
         // Only approve router if token is not WETH (since we won't swap WETH)
         if (tokenIn != WETH) {
-            token.safeIncreaseAllowance(uniswapRouter, amountIn);
+            token.safeIncreaseAllowance(universalRouter, amountIn);
         }
     }
 
-    /// @notice Executes a Uniswap V3 exact input swap from any token to WETH
-    /// @dev Internal function that performs a single-hop swap using Uniswap V3's exactInputSingle
+    /// @notice Executes a Uniswap V3 exact input swap from any token to WETH using UniversalRouter
+    /// @dev Internal function that performs a single-hop swap using UniversalRouter's execute function
+    ///      Note: sqrtPriceLimitX96 parameter is ignored as UniversalRouter V3_SWAP_EXACT_IN doesn't support it
     /// @param tokenIn The address of the input token to swap from
     /// @param poolFee The fee tier of the Uniswap V3 pool (e.g., 3000 for 0.3%)
     /// @param amountIn The exact amount of input tokens to swap
     /// @param amountOutMin The minimum amount of WETH to receive (slippage protection)
-    /// @param sqrtPriceLimitX96 The price limit for the swap in sqrt(price) * 2^96 format (0 = no limit)
+    /// @param sqrtPriceLimitX96 The price limit for the swap (IGNORED - not supported by UniversalRouter)
     /// @param deadline The expiration timestamp for the swap transaction
     /// @return wethReceived The actual amount of WETH tokens received from the swap
     function _swapToWETH(
@@ -103,17 +105,32 @@ abstract contract SwapHelper is TreasuryManager{
         uint160 sqrtPriceLimitX96,
         uint256 deadline
     ) internal returns (uint256 wethReceived) {
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-            tokenIn: tokenIn,
-            tokenOut: WETH,
-            fee: poolFee,
-            recipient: address(this),
-            deadline: deadline,
-            amountIn: amountIn,
-            amountOutMinimum: amountOutMin,
-            sqrtPriceLimitX96: sqrtPriceLimitX96
-        });
-        wethReceived = ISwapRouter(uniswapRouter).exactInputSingle(params);
+        // Get initial WETH balance
+        uint256 initialWETHBalance = IERC20PermitFull(WETH).balanceOf(address(this));
+        
+        // Encode the path for Uniswap V3: tokenIn -> poolFee -> WETH
+        bytes memory path = abi.encodePacked(tokenIn, poolFee, WETH);
+        
+        // Create command (V3_SWAP_EXACT_IN = 0x00)
+        bytes memory commands = abi.encodePacked(uint8(0x00));
+        
+        // Encode inputs for V3_SWAP_EXACT_IN command
+        // Parameters: (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
+        bytes[] memory inputs = new bytes[](1);
+        inputs[0] = abi.encode(
+            address(this),  // recipient: this contract receives the WETH
+            amountIn,       // amountIn: exact amount of input tokens
+            amountOutMin,   // amountOutMin: minimum output amount for slippage protection
+            path,           // path: encoded path for the swap
+            false           // payerIsUser: false since tokens are already in this contract
+        );
+        
+        // Execute the swap through UniversalRouter
+        IUniversalRouter(universalRouter).execute(commands, inputs, deadline);
+        
+        // Calculate the amount of WETH received
+        uint256 finalWETHBalance = IERC20PermitFull(WETH).balanceOf(address(this));
+        wethReceived = finalWETHBalance - initialWETHBalance;
     }
 
     /// @notice Unwraps WETH tokens to native ETH

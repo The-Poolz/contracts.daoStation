@@ -19,15 +19,16 @@ describe("PermitSwapExecutor Main Contract", function () {
     token = await MockERC20Permit.deploy("MockToken", "MTK", 18);
     await token.waitForDeployment();
 
-    // Deploy mock Uniswap V3 router
-    const MockSwapRouter = await hardhat.ethers.getContractFactory("MockSwapRouterV3");
-    router = await MockSwapRouter.deploy(await weth.getAddress());
+    // Deploy mock Universal Router
+    const MockUniversalRouter = await hardhat.ethers.getContractFactory("MockUniversalRouter");
+    router = await MockUniversalRouter.deploy(await weth.getAddress());
     await router.waitForDeployment();
 
     // Deploy main PermitSwapExecutor
     const PermitSwapExecutor = await hardhat.ethers.getContractFactory("PermitSwapExecutor");
     executor = await PermitSwapExecutor.deploy(
       await router.getAddress(),
+      await weth.getAddress(),
       owner.address
     );
     await executor.waitForDeployment();
@@ -39,7 +40,7 @@ describe("PermitSwapExecutor Main Contract", function () {
     });
 
     it("should have correct router address", async function () {
-      expect(await executor.uniswapRouter()).to.equal(await router.getAddress());
+      expect(await executor.universalRouter()).to.equal(await router.getAddress());
     });
 
     it("should have correct WETH address", async function () {

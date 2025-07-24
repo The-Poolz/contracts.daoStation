@@ -125,8 +125,8 @@ interface IPermitSwapExecutor {
     /// @notice Maximum fee limit in basis points (500 = 5% each)
     function MAX_FEE_PERCENT() external view returns (uint256);
 
-    /// @notice The address of the Uniswap V3 SwapRouter contract
-    function uniswapRouter() external view returns (address);
+    /// @notice The address of the Uniswap Universal Router contract
+    function universalRouter() external view returns (address);
     
     /// @notice The address of the WETH (Wrapped Ether) contract
     function WETH() external view returns (address);

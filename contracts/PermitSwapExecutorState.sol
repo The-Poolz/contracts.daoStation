@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "./interfaces/ISwapRouter.sol";
+import "./interfaces/IUniversalRouter.sol";
 import "./interfaces/IPermitSwapExecutor.sol";
 import "./common/Modifiers.sol";
 
@@ -37,9 +37,9 @@ abstract contract PermitSwapExecutorState is
     /// @dev Prevents owner from setting excessive fees that would be unfair to users
     uint256 public constant MAX_FEE_PERCENT = 500;
 
-    /// @notice The address of the Uniswap V3 SwapRouter contract
-    /// @dev Used for executing token swaps on Uniswap V3 protocol
-    address public immutable uniswapRouter;
+    /// @notice The address of the Uniswap Universal Router contract
+    /// @dev Used for executing token swaps on Uniswap v2, v3, and v4 protocols
+    address public immutable universalRouter;
 
     /// @notice The address of the WETH (Wrapped Ether) contract
     /// @dev Retrieved from the Uniswap router and used as the target token for swaps

@@ -18,6 +18,9 @@ interface Errors {
     /// @notice Thrown when router address is zero
     error ZeroRouterAddress();
     
+    /// @notice Thrown when WETH address is zero
+    error ZeroWETHAddress();
+    
     /// @notice Thrown when maintainer fee exceeds maximum allowed
     error MaintainerFeeTooHigh();
     

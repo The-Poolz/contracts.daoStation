@@ -21,7 +21,6 @@ contract TreasuryManagerTest is TreasuryManager {
         uint24 poolFee,
         uint amountIn,
         uint amountOutMin,
-        uint160 sqrtPriceLimitX96,
         address user,
         bytes calldata data,
         uint deadline,

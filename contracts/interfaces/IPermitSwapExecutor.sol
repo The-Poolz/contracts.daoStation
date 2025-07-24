@@ -55,7 +55,6 @@ interface IPermitSwapExecutor {
     /// @param poolFee The Uniswap V3 pool fee for the swap (e.g., 3000 for 0.3%)
     /// @param amountIn The amount of input tokens to swap
     /// @param amountOutMin The minimum amount of WETH to receive from the swap (slippage protection)
-    /// @param sqrtPriceLimitX96 The price limit for the swap in sqrt(price) * 2^96 format (0 = no limit)
     /// @param user The address of the token owner who signed the permit
     /// @param data Arbitrary bytes data to be included with the swap
     /// @param deadline The expiration timestamp for the permit signature
@@ -67,7 +66,6 @@ interface IPermitSwapExecutor {
         uint24 poolFee,
         uint amountIn,
         uint amountOutMin,
-        uint160 sqrtPriceLimitX96,
         address user,
         bytes calldata data,
         uint deadline,

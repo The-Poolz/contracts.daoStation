@@ -24,7 +24,6 @@ contract SwapHelperTest is SwapHelper {
         uint24 poolFee,
         uint amountIn,
         uint amountOutMin,
-        uint160 sqrtPriceLimitX96,
         address user,
         bytes calldata data,
         uint deadline,
@@ -52,10 +51,9 @@ contract SwapHelperTest is SwapHelper {
         uint24 poolFee,
         uint256 amountIn,
         uint256 amountOutMin,
-        uint160 sqrtPriceLimitX96,
         uint256 deadline
     ) external returns (uint256 wethReceived) {
-        return _swapToWETH(tokenIn, poolFee, amountIn, amountOutMin, sqrtPriceLimitX96, deadline);
+        return _swapToWETH(tokenIn, poolFee, amountIn, amountOutMin, deadline);
     }
 
     function test_unwrapWETH(uint256 wethAmount) external {

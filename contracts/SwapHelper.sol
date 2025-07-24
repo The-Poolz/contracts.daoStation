@@ -89,12 +89,10 @@ abstract contract SwapHelper is TreasuryManager{
 
     /// @notice Executes a Uniswap V3 exact input swap from any token to WETH using UniversalRouter
     /// @dev Internal function that performs a single-hop swap using UniversalRouter's execute function
-    ///      Note: sqrtPriceLimitX96 parameter is ignored as UniversalRouter V3_SWAP_EXACT_IN doesn't support it
     /// @param tokenIn The address of the input token to swap from
     /// @param poolFee The fee tier of the Uniswap V3 pool (e.g., 3000 for 0.3%)
     /// @param amountIn The exact amount of input tokens to swap
     /// @param amountOutMin The minimum amount of WETH to receive (slippage protection)
-    /// @param sqrtPriceLimitX96 The price limit for the swap (IGNORED - not supported by UniversalRouter)
     /// @param deadline The expiration timestamp for the swap transaction
     /// @return wethReceived The actual amount of WETH tokens received from the swap
     function _swapToWETH(
@@ -102,7 +100,6 @@ abstract contract SwapHelper is TreasuryManager{
         uint24 poolFee,
         uint256 amountIn,
         uint256 amountOutMin,
-        uint160 sqrtPriceLimitX96,
         uint256 deadline
     ) internal returns (uint256 wethReceived) {
         // Get initial WETH balance

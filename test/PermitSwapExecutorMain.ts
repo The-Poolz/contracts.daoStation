@@ -130,7 +130,6 @@ describe("PermitSwapExecutor Main Contract", function () {
         3000, // 0.3% fee
         tokenAmount,
         hardhat.ethers.parseEther("0.9"), // min out
-        0, // no price limit
         user.address,
         testData,
         deadline,
@@ -204,7 +203,6 @@ describe("PermitSwapExecutor Main Contract", function () {
         3000, // Pool fee (irrelevant since no swap)
         wethAmount,
         hardhat.ethers.parseEther("0.9"), // Min out (irrelevant since no swap)
-        0, // No price limit (irrelevant since no swap)
         user.address,
         testData,
         deadline,
@@ -238,7 +236,6 @@ describe("PermitSwapExecutor Main Contract", function () {
         3000,
         tokenAmount,
         hardhat.ethers.parseEther("0.9"),
-        0,
         user.address,
         "0x",
         deadline,
@@ -257,7 +254,6 @@ describe("PermitSwapExecutor Main Contract", function () {
         3000,
         tokenAmount,
         hardhat.ethers.parseEther("0.9"),
-        0,
         hardhat.ethers.ZeroAddress,
         "0x",
         deadline,
@@ -276,7 +272,6 @@ describe("PermitSwapExecutor Main Contract", function () {
         3000,
         tokenAmount,
         hardhat.ethers.parseEther("0.9"),
-        0,
         user.address,
         "0x",
         expiredDeadline,
@@ -330,7 +325,6 @@ describe("PermitSwapExecutor Main Contract", function () {
         3000,
         tokenAmount,
         hardhat.ethers.parseEther("0.9"),
-        0,
         user.address,
         "0x",
         deadline,

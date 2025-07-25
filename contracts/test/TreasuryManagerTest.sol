@@ -4,8 +4,8 @@ pragma solidity ^0.8.20;
 import "../TreasuryManager.sol";
 
 contract TreasuryManagerTest is TreasuryManager {
-    constructor(address universalRouterAddress, address wethAddress, address initialOwner) 
-        Ownable(initialOwner) 
+    constructor(address universalRouterAddress, address wethAddress) 
+        Ownable(_msgSender()) 
     {
         universalRouter = universalRouterAddress;
         WETH = wethAddress;

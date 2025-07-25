@@ -25,9 +25,8 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     /// @dev Sets up the Universal Router address and WETH address for swap operations
     /// @param _universalRouter The address of the Uniswap Universal Router contract
     /// @param _weth The address of the WETH contract
-    /// @param initialOwner The address that will be set as the contract owner
-    constructor(address _universalRouter, address _weth, address initialOwner) 
-        Ownable(initialOwner) 
+    constructor(address _universalRouter, address _weth) 
+        Ownable(_msgSender()) 
     {
         if (_universalRouter == address(0)) {
             revert Errors.ZeroRouterAddress();

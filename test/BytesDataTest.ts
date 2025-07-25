@@ -51,8 +51,7 @@ describe("PermitSwapExecutor Bytes Data", function () {
     const PermitSwapExecutor = await hardhat.ethers.getContractFactory("PermitSwapExecutor");
     executor = await PermitSwapExecutor.deploy(
       await router.getAddress(),
-      await weth.getAddress(),
-      owner.address
+      await weth.getAddress()
     );
     await executor.waitForDeployment();
 

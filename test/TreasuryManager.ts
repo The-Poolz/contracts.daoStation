@@ -20,7 +20,7 @@ describe("TreasuryManager", function () {
     await router.waitForDeployment();
 
     const TreasuryManagerTest = await ethers.getContractFactory("TreasuryManagerTest");
-    treasuryTest = await TreasuryManagerTest.deploy(await router.getAddress(), await weth.getAddress(), owner.address);
+    treasuryTest = await TreasuryManagerTest.deploy(await router.getAddress(), await weth.getAddress());
     await treasuryTest.waitForDeployment();
   });
 

@@ -4,8 +4,8 @@ pragma solidity ^0.8.20;
 import "../SwapHelper.sol";
 
 contract SwapHelperTest is SwapHelper {
-    constructor(address universalRouterAddress, address wethAddress, address initialOwner) 
-        Ownable(initialOwner) 
+    constructor(address universalRouterAddress, address wethAddress) 
+        Ownable(_msgSender())
     {
         if (universalRouterAddress == address(0)) {
             revert Errors.ZeroRouterAddress();

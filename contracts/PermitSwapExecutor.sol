@@ -71,7 +71,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         bytes32 s
     ) external override onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) nonEmptyCommands(commands) nonEmptyInputs(inputs) {
         // Extract amountIn from the inputs to prepare the token
-        (, uint256 amountIn, , , ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
+        (, uint256 amountIn, , bytes memory path, ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
         
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
@@ -82,6 +82,7 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
             wethReceived = amountIn;
         } else {
             // Swap to WETH using external commands and inputs
+            _validateInputParams(path);
             wethReceived = _swapToWETH(commands, inputs, deadline);
         }
         

@@ -16,7 +16,7 @@ abstract contract TreasuryManager is PermitSwapExecutorState {
     /// @dev Internal function that calculates and distributes fees based on current fee percentages
     /// @param ethBalance The total amount of ETH to distribute
     /// @param user The address of the user who will receive the majority of ETH
-    /// @param maintainer The address of the maintainer who will receive the maintainer fee
+    /// @param maintainer The address of the maintainer who will receive their fee
     /// @return treasuryFee The amount of ETH kept by the contract as treasury fee
     /// @return userAmount The amount of ETH sent to the user
     /// @return maintainerAmount The amount of ETH sent to the maintainer
@@ -24,7 +24,7 @@ abstract contract TreasuryManager is PermitSwapExecutorState {
         maintainerAmount = (ethBalance * maintainerFeePercent) / 10000; // Convert basis points to percentage
         treasuryFee = (ethBalance * treasuryFeePercent) / 10000;       // Convert basis points to percentage
         userAmount = ethBalance - maintainerAmount - treasuryFee;      // User gets remainder after fees
-        
+
         payable(maintainer).transfer(maintainerAmount);
         payable(user).transfer(userAmount);
         

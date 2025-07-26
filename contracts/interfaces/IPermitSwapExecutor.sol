@@ -52,10 +52,8 @@ interface IPermitSwapExecutor {
 
     /// @notice Executes a complete permit-based token swap to ETH with fee distribution
     /// @param tokenIn The address of the ERC-20 token to swap (must support ERC-2612 permit)
-    /// @param poolFee The Uniswap V3 pool fee for the swap (e.g., 3000 for 0.3%)
-    /// @param amountIn The amount of input tokens to swap
-    /// @param amountOutMin The minimum amount of WETH to receive from the swap (slippage protection)
-    /// @param sqrtPriceLimitX96 The price limit for the swap in sqrt(price) * 2^96 format (0 = no limit)
+    /// @param commands The encoded commands for UniversalRouter execution
+    /// @param inputs The encoded inputs array corresponding to the commands
     /// @param user The address of the token owner who signed the permit
     /// @param data Arbitrary bytes data to be included with the swap
     /// @param deadline The expiration timestamp for the permit signature
@@ -64,10 +62,8 @@ interface IPermitSwapExecutor {
     /// @param s Half of the ECDSA permit signature pair
     function executeSwap(
         address tokenIn,
-        uint24 poolFee,
-        uint amountIn,
-        uint amountOutMin,
-        uint160 sqrtPriceLimitX96,
+        bytes calldata commands,
+        bytes[] calldata inputs,
         address user,
         bytes calldata data,
         uint deadline,
@@ -125,8 +121,8 @@ interface IPermitSwapExecutor {
     /// @notice Maximum fee limit in basis points (500 = 5% each)
     function MAX_FEE_PERCENT() external view returns (uint256);
 
-    /// @notice The address of the Uniswap V3 SwapRouter contract
-    function uniswapRouter() external view returns (address);
+    /// @notice The address of the Uniswap Universal Router contract
+    function universalRouter() external view returns (address);
     
     /// @notice The address of the WETH (Wrapped Ether) contract
     function WETH() external view returns (address);

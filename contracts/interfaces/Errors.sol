@@ -18,6 +18,9 @@ interface Errors {
     /// @notice Thrown when router address is zero
     error ZeroRouterAddress();
     
+    /// @notice Thrown when WETH address is zero
+    error ZeroWETHAddress();
+    
     /// @notice Thrown when maintainer fee exceeds maximum allowed
     error MaintainerFeeTooHigh();
     
@@ -32,4 +35,19 @@ interface Errors {
     
     /// @notice Thrown when permit signature is invalid
     error InvalidPermitSignature();
+    
+    /// @notice Thrown when swap commands are empty or invalid
+    error InvalidSwapCommands();
+    
+    /// @notice Thrown when swap inputs are empty or invalid
+    error InvalidSwapInputs();
+    
+    /// @notice Thrown when swap path is empty or invalid
+    error InvalidSwapPath();
+    
+    /// @notice Thrown when output token is not WETH
+    error InvalidOutputToken();
+
+    /// @notice Thrown when permit2 address is zero
+    error ZeroPermit2Address();
 }

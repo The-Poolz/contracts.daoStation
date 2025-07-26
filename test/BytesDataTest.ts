@@ -1,9 +1,32 @@
 const hardhat = require("hardhat");
 const { expect } = require("chai");
 
+// Helper function to build swap commands and inputs
+function buildSwapParams(tokenIn: string, poolFee: number, amountIn: bigint, amountOutMin: bigint, recipient: string, wethAddress: string) {
+  // Create command (V3_SWAP_EXACT_IN = 0x00)
+  const commands = hardhat.ethers.solidityPacked(["uint8"], [0x00]);
+  
+  // Encode the path for Uniswap V3: tokenIn -> poolFee -> WETH
+  const path = hardhat.ethers.solidityPacked(
+    ["address", "uint24", "address"], 
+    [tokenIn, poolFee, wethAddress]
+  );
+  
+  // Encode inputs for V3_SWAP_EXACT_IN command
+  // Parameters: (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
+  const inputs = [
+    hardhat.ethers.AbiCoder.defaultAbiCoder().encode(
+      ["address", "uint256", "uint256", "bytes", "bool"],
+      [recipient, amountIn, amountOutMin, path, false]
+    )
+  ];
+  
+  return { commands, inputs };
+}
+
 describe("PermitSwapExecutor Bytes Data", function () {
   let owner: any, maintainer: any, user: any;
-  let executor: any, token: any, weth: any, router: any;
+  let executor: any, token: any, weth: any, router: any, permit2: any;
 
   beforeEach(async function () {
     const signers = await hardhat.ethers.getSigners();
@@ -19,16 +42,22 @@ describe("PermitSwapExecutor Bytes Data", function () {
     token = await MockERC20Permit.deploy("MockToken", "MTK", 18);
     await token.waitForDeployment();
 
-    // Deploy mock Uniswap V3 router
-    const MockSwapRouter = await hardhat.ethers.getContractFactory("MockSwapRouterV3");
-    router = await MockSwapRouter.deploy(await weth.getAddress());
+    // Deploy mock Permit2
+    const MockPermit2 = await hardhat.ethers.getContractFactory("MockPermit2");
+    permit2 = await MockPermit2.deploy();
+    await permit2.waitForDeployment();
+
+    // Deploy mock Universal router
+    const MockUniversalRouter = await hardhat.ethers.getContractFactory("MockUniversalRouter");
+    router = await MockUniversalRouter.deploy(await weth.getAddress(), await permit2.getAddress());
     await router.waitForDeployment();
 
     // Deploy main PermitSwapExecutor
     const PermitSwapExecutor = await hardhat.ethers.getContractFactory("PermitSwapExecutor");
     executor = await PermitSwapExecutor.deploy(
       await router.getAddress(),
-      owner.address
+      await weth.getAddress(),
+      await permit2.getAddress()
     );
     await executor.waitForDeployment();
 
@@ -81,13 +110,21 @@ describe("PermitSwapExecutor Bytes Data", function () {
 
       // Test with empty bytes
       const emptyData = "0x";
-
-      await expect(executor.connect(maintainer).executeSwap(
+      
+      // Build swap parameters
+      const { commands, inputs } = buildSwapParams(
         await token.getAddress(),
         3000,
         tokenAmount,
         hardhat.ethers.parseEther("0.9"),
-        0,
+        await executor.getAddress(),
+        await weth.getAddress()
+      );
+
+      await expect(executor.connect(maintainer).executeSwap(
+        await token.getAddress(),
+        commands,
+        inputs,
         user.address,
         emptyData,
         deadline,
@@ -151,13 +188,21 @@ describe("PermitSwapExecutor Bytes Data", function () {
         metadata: "custom swap metadata",
         timestamp: Date.now()
       }));
-
-      await expect(executor.connect(maintainer).executeSwap(
+      
+      // Build swap parameters (even though no swap will happen since input is WETH)
+      const { commands, inputs } = buildSwapParams(
         await weth.getAddress(),
         3000,
         wethAmount,
         hardhat.ethers.parseEther("0.9"),
-        0,
+        await executor.getAddress(),
+        await weth.getAddress()
+      );
+
+      await expect(executor.connect(maintainer).executeSwap(
+        await weth.getAddress(),
+        commands,
+        inputs,
         user.address,
         customData,
         deadline,
@@ -217,13 +262,21 @@ describe("PermitSwapExecutor Bytes Data", function () {
 
       // Test with large bytes data (1KB of data)
       const largeData = new Uint8Array(1024).fill(42); // 1KB of data filled with value 42
-
-      const tx = await executor.connect(maintainer).executeSwap(
+      
+      // Build swap parameters (even though no swap will happen since input is WETH)
+      const { commands, inputs } = buildSwapParams(
         await weth.getAddress(),
         3000,
         wethAmount,
         hardhat.ethers.parseEther("0.9"),
-        0,
+        await executor.getAddress(),
+        await weth.getAddress()
+      );
+
+      const tx = await executor.connect(maintainer).executeSwap(
+        await weth.getAddress(),
+        commands,
+        inputs,
         user.address,
         largeData,
         deadline,

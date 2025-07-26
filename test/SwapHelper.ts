@@ -3,13 +3,12 @@ const { expect } = require("chai");
 
 describe("SwapHelper", function () {
   let user: any;
-  let swapTest: any, token: any, weth: any, router: any;
+  let swapTest: any, token: any, weth: any, router: any, permit2: any;
 
   describe("Deployment", function () {
     it("should revert if router address is zero", async function () {
-      const [owner] = await hardhat.ethers.getSigners();
       const SwapHelperTest = await hardhat.ethers.getContractFactory("SwapHelperTest");
-      await expect(SwapHelperTest.deploy(hardhat.ethers.ZeroAddress, hardhat.ethers.ZeroAddress, owner.address))
+      await expect(SwapHelperTest.deploy(hardhat.ethers.ZeroAddress, hardhat.ethers.ZeroAddress, hardhat.ethers.ZeroAddress))
         .to.be.revertedWithCustomError(SwapHelperTest, "ZeroRouterAddress");
     });
   });
@@ -28,14 +27,18 @@ describe("SwapHelper", function () {
     token = await MockERC20Permit.deploy("MockToken", "MTK", 18);
     await token.waitForDeployment();
 
-    // Deploy mock Uniswap V3 router
-    const MockSwapRouter = await hardhat.ethers.getContractFactory("MockSwapRouterV3");
-    router = await MockSwapRouter.deploy(await weth.getAddress());
+    // Deploy mock Permit2
+    const MockPermit2 = await hardhat.ethers.getContractFactory("MockPermit2");
+    permit2 = await MockPermit2.deploy();
+    await permit2.waitForDeployment();
+
+    // Deploy mock Universal Router
+    const MockUniversalRouter = await hardhat.ethers.getContractFactory("MockUniversalRouter");
+    router = await MockUniversalRouter.deploy(await weth.getAddress(), await permit2.getAddress());
     await router.waitForDeployment();
 
     const SwapHelperTest = await hardhat.ethers.getContractFactory("SwapHelperTest");
-    const [owner] = await hardhat.ethers.getSigners();
-    swapTest = await SwapHelperTest.deploy(await router.getAddress(), await weth.getAddress(), owner.address);
+    swapTest = await SwapHelperTest.deploy(await router.getAddress(), await weth.getAddress(), await permit2.getAddress());
     await swapTest.waitForDeployment();
   });
 

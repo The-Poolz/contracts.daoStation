@@ -14,13 +14,13 @@ describe("TreasuryManager", function () {
     const weth = await MockWETH9.deploy();
     await weth.waitForDeployment();
 
-    // Deploy mock Uniswap V3 router
-    const MockSwapRouter = await ethers.getContractFactory("MockSwapRouterV3");
-    const router = await MockSwapRouter.deploy(await weth.getAddress());
+    // Deploy mock Universal Router with WETH address
+    const MockUniversalRouter = await ethers.getContractFactory("MockUniversalRouter");
+    const router = await MockUniversalRouter.deploy(await weth.getAddress(), ethers.ZeroAddress);
     await router.waitForDeployment();
 
     const TreasuryManagerTest = await ethers.getContractFactory("TreasuryManagerTest");
-    treasuryTest = await TreasuryManagerTest.deploy(await router.getAddress(), await weth.getAddress(), owner.address);
+    treasuryTest = await TreasuryManagerTest.deploy(await router.getAddress(), await weth.getAddress());
     await treasuryTest.waitForDeployment();
   });
 
@@ -29,15 +29,19 @@ describe("TreasuryManager", function () {
     await treasuryTest.test_depositETH({ value: ethAmount });
     
     const userInitialBalance = await ethers.provider.getBalance(user.address);
-    const maintainerInitialBalance = await ethers.provider.getBalance(maintainer.address);
+    const ownerInitialBalance = await ethers.provider.getBalance(owner.address);
     
-    await treasuryTest.test_distributeETH(ethAmount, user.address, maintainer.address);
+    // Call from owner account - maintainer fee will go to msg.sender (owner)
+    const tx = await treasuryTest.test_distributeETH(ethAmount, user.address);
+    const receipt = await tx.wait();
+    const gasUsed = receipt.gasUsed * receipt.gasPrice;
     
     const userFinalBalance = await ethers.provider.getBalance(user.address);
-    const maintainerFinalBalance = await ethers.provider.getBalance(maintainer.address);
+    const ownerFinalBalance = await ethers.provider.getBalance(owner.address);
     
     expect(userFinalBalance - userInitialBalance).to.equal(ethers.parseEther("0.97"));
-    expect(maintainerFinalBalance - maintainerInitialBalance).to.equal(ethers.parseEther("0.015"));
+    // Owner gets maintainer fee minus gas costs
+    expect(ownerFinalBalance - ownerInitialBalance + gasUsed).to.equal(ethers.parseEther("0.015"));
   });
 
   it("should allow owner to withdraw treasury", async function () {

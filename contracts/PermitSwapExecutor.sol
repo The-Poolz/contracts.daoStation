@@ -21,16 +21,25 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         _;
     }
 
-    /// @notice Initializes states with Uniswap router and owner
-    /// @dev Sets up the router address and retrieves WETH address from it
-    /// @param _uniswapRouter The address of the Uniswap V3 SwapRouter contract
-    /// @param initialOwner The address that will be set as the contract owner
-    constructor(address _uniswapRouter, address initialOwner) Ownable(initialOwner) {
-        if (_uniswapRouter == address(0)) {
+    /// @notice Initializes states with Universal Router, WETH address, and owner
+    /// @dev Sets up the Universal Router address and WETH address for swap operations
+    /// @param _universalRouter The address of the Uniswap Universal Router contract
+    /// @param _weth The address of the WETH contract
+    constructor(address _universalRouter, address _weth, IPermit2 _permit2) 
+        Ownable(_msgSender()) 
+    {
+        if (_universalRouter == address(0)) {
             revert Errors.ZeroRouterAddress();
         }
-        uniswapRouter = _uniswapRouter;
-        WETH = ISwapRouter(_uniswapRouter).WETH9();
+        if (_weth == address(0)) {
+            revert Errors.ZeroWETHAddress();
+        }
+        if (address(_permit2) == address(0)) {
+            revert Errors.ZeroPermit2Address();
+        }
+        universalRouter = _universalRouter;
+        WETH = _weth;
+        permit2 = _permit2;
     }
 
     /// @notice Sets the authorization status for a maintainer
@@ -45,10 +54,8 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     /// @notice Executes a complete permit-based token swap to ETH with fee distribution
     /// @dev Performs permit, token transfer, swap (if needed), WETH unwrapping, and ETH distribution in one atomic transaction
     /// @param tokenIn The address of the ERC-20 token to swap (must support ERC-2612 permit)
-    /// @param poolFee The Uniswap V3 pool fee for the swap (e.g., 3000 for 0.3%)
-    /// @param amountIn The amount of input tokens to swap
-    /// @param amountOutMin The minimum amount of WETH to receive from the swap (slippage protection)
-    /// @param sqrtPriceLimitX96 The price limit for the swap in sqrt(price) * 2^96 format (0 = no limit)
+    /// @param commands The encoded commands for UniversalRouter execution
+    /// @param inputs The encoded inputs array corresponding to the commands
     /// @param user The address of the token owner who signed the permit
     /// @param data Arbitrary bytes data to be included with the swap
     /// @param deadline The expiration timestamp for the permit signature
@@ -57,17 +64,18 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
     /// @param s Half of the ECDSA permit signature pair
     function executeSwap(
         address tokenIn,
-        uint24 poolFee,
-        uint amountIn,
-        uint amountOutMin,
-        uint160 sqrtPriceLimitX96,
+        bytes calldata commands,
+        bytes[] calldata inputs,
         address user,
         bytes calldata data,
         uint deadline,
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external override onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) {
+    ) external override onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) nonEmptyCommands(commands) nonEmptyInputs(inputs) {
+        // Extract amountIn from the inputs to prepare the token
+        (, uint256 amountIn, , bytes memory path, ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
+        
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         
@@ -76,8 +84,9 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         if (tokenIn == WETH) {
             wethReceived = amountIn;
         } else {
-            // Swap to WETH (Uniswap V3)
-            wethReceived = _swapToWETH(tokenIn, poolFee, amountIn, amountOutMin, sqrtPriceLimitX96, deadline);
+            // Swap to WETH using external commands and inputs
+            _validateInputParams(path);
+            wethReceived = _swapToWETH(commands, inputs, deadline);
         }
         
         // Unwrap WETH to ETH

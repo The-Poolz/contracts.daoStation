@@ -2,17 +2,25 @@
 pragma solidity ^0.8.20;
 
 import "../SwapHelper.sol";
+import "../mock/MockPermit2.sol";
 
 contract SwapHelperTest is SwapHelper {
-    constructor(address uniswapRouterAddress, address wethAddress, address initialOwner) 
-        Ownable(initialOwner) 
+    constructor(address universalRouterAddress, address wethAddress, address permit2Address) 
+        Ownable(_msgSender())
     {
-        if (uniswapRouterAddress == address(0)) {
+        if (universalRouterAddress == address(0)) {
             revert Errors.ZeroRouterAddress();
         }
-        // Set the immutable variables
-        uniswapRouter = uniswapRouterAddress;
+        if (wethAddress == address(0)) {
+            revert Errors.ZeroWETHAddress();
+        }
+        if (permit2Address == address(0)) {
+            revert Errors.ZeroPermit2Address();
+        }
+        universalRouter = universalRouterAddress;
         WETH = wethAddress;
+        permit2 = IPermit2(permit2Address);
+        // Constructor now properly calls parent constructors to set immutable variables
     }
 
     // Implement required interface functions as dummy implementations for testing
@@ -22,10 +30,8 @@ contract SwapHelperTest is SwapHelper {
 
     function executeSwap(
         address tokenIn,
-        uint24 poolFee,
-        uint amountIn,
-        uint amountOutMin,
-        uint160 sqrtPriceLimitX96,
+        bytes calldata commands,
+        bytes[] calldata inputs,
         address user,
         bytes calldata data,
         uint deadline,
@@ -49,14 +55,11 @@ contract SwapHelperTest is SwapHelper {
     }
 
     function test_swapToWETH(
-        address tokenIn,
-        uint24 poolFee,
-        uint256 amountIn,
-        uint256 amountOutMin,
-        uint160 sqrtPriceLimitX96,
+        bytes calldata commands,
+        bytes[] calldata inputs,
         uint256 deadline
     ) external returns (uint256 wethReceived) {
-        return _swapToWETH(tokenIn, poolFee, amountIn, amountOutMin, sqrtPriceLimitX96, deadline);
+        return _swapToWETH(commands, inputs, deadline);
     }
 
     function test_unwrapWETH(uint256 wethAmount) external {

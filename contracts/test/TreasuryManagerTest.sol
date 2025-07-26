@@ -4,12 +4,12 @@ pragma solidity ^0.8.20;
 import "../TreasuryManager.sol";
 
 contract TreasuryManagerTest is TreasuryManager {
-    constructor(address uniswapRouterAddress, address wethAddress, address initialOwner) 
-        Ownable(initialOwner) 
+    constructor(address universalRouterAddress, address wethAddress) 
+        Ownable(_msgSender()) 
     {
-        // Set the immutable variables
-        uniswapRouter = uniswapRouterAddress;
+        universalRouter = universalRouterAddress;
         WETH = wethAddress;
+        // Constructor now properly calls parent constructors to set immutable variables
     }
 
     // Implement required interface functions as dummy implementations for testing
@@ -19,10 +19,8 @@ contract TreasuryManagerTest is TreasuryManager {
 
     function executeSwap(
         address tokenIn,
-        uint24 poolFee,
-        uint amountIn,
-        uint amountOutMin,
-        uint160 sqrtPriceLimitX96,
+        bytes calldata commands,
+        bytes[] calldata inputs,
         address user,
         bytes calldata data,
         uint deadline,
@@ -35,8 +33,7 @@ contract TreasuryManagerTest is TreasuryManager {
 
     function test_distributeETH(
         uint256 ethBalance,
-        address user,
-        address maintainer
+        address user
     )
         external
         returns (
@@ -45,7 +42,7 @@ contract TreasuryManagerTest is TreasuryManager {
             uint256 maintainerAmount
         )
     {
-        return _distributeETH(ethBalance, user, maintainer);
+        return _distributeETH(ethBalance, user, msg.sender);
     }
 
     function test_depositETH() external payable {}

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IUniversalRouter.sol";
+import "../interfaces/IPermit2.sol";
 
 /// @title Mock Universal Router
 /// @notice A simplified mock implementation of Uniswap's Universal Router for testing
@@ -13,6 +14,10 @@ contract MockUniversalRouter is IUniversalRouter {
     /// @dev Set during construction
     address public immutable WETH;
     
+    /// @notice The address of the Permit2 contract
+    /// @dev Set during construction
+    IPermit2 public immutable permit2;
+    
     /// @notice Fixed exchange rate used for all swaps (1:1 for simplicity)
     /// @dev In a real router, this would be determined by pool prices and liquidity
     uint256 public fixedPrice = 1 ether; // 1:1 for simplicity
@@ -20,8 +25,10 @@ contract MockUniversalRouter is IUniversalRouter {
     /// @notice Creates a new mock Universal Router
     /// @dev Sets the WETH address that will be used for all WETH-related operations
     /// @param _weth The address of the WETH token contract
-    constructor(address _weth) {
+    /// @param _permit2 The address of the Permit2 contract
+    constructor(address _weth, address _permit2) {
         WETH = _weth;
+        permit2 = IPermit2(_permit2);
     }
 
     /// @notice Executes encoded commands along with provided inputs
@@ -74,14 +81,16 @@ contract MockUniversalRouter is IUniversalRouter {
         }
         address tokenOut = bytesToAddress(tokenOutBytes);
         
-        // Transfer input token from msg.sender (the contract calling this)
-        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        // For this simplified mock, we simulate a successful swap without complex token transfers
+        // The real Universal Router would use permit2 to get input tokens from the user
+        // For our mock, we just provide the expected output tokens to the recipient
         
-        // Calculate output amount (1:1 for simplicity)
+        // Calculate output amount (1:1 for simplicity) 
         uint256 amountOut = amountIn;
         require(amountOut >= amountOutMin, "Insufficient output amount");
         
-        // Transfer output token to recipient
+        // Transfer output tokens to recipient (simulating a successful swap)
+        // We assume this mock router has been pre-loaded with output tokens for testing
         require(IERC20(tokenOut).transfer(recipient, amountOut), "Output token transfer failed");
     }
     

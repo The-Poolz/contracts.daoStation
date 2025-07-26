@@ -47,4 +47,7 @@ interface Errors {
     
     /// @notice Thrown when output token is not WETH
     error InvalidOutputToken();
+
+    /// @notice Thrown when permit2 address is zero
+    error ZeroPermit2Address();
 }

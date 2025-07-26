@@ -16,7 +16,7 @@ describe("TreasuryManager", function () {
 
     // Deploy mock Universal Router with WETH address
     const MockUniversalRouter = await ethers.getContractFactory("MockUniversalRouter");
-    const router = await MockUniversalRouter.deploy(await weth.getAddress());
+    const router = await MockUniversalRouter.deploy(await weth.getAddress(), ethers.ZeroAddress);
     await router.waitForDeployment();
 
     const TreasuryManagerTest = await ethers.getContractFactory("TreasuryManagerTest");

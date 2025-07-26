@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/IUniversalRouter.sol";
 import "./interfaces/IPermitSwapExecutor.sol";
 import "./common/Modifiers.sol";
+import "./interfaces/IPermit2.sol";
 
 /**
  * @title PermitSwapExecutorState
@@ -40,6 +41,10 @@ abstract contract PermitSwapExecutorState is
     /// @notice The address of the Uniswap Universal Router contract
     /// @dev Used for executing token swaps on Uniswap v2, v3, and v4 protocols
     address public immutable universalRouter;
+
+    /// @notice The address of the Permit2 contract for ERC-2612 permit functionality
+    /// @dev Permit2 is used for gasless token approvals and permit signatures
+    IPermit2 public immutable permit2;
 
     /// @notice The address of the WETH (Wrapped Ether) contract
     /// @dev Retrieved from the Uniswap router and used as the target token for swaps

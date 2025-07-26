@@ -3,12 +3,12 @@ const { expect } = require("chai");
 
 describe("SwapHelper", function () {
   let user: any;
-  let swapTest: any, token: any, weth: any, router: any;
+  let swapTest: any, token: any, weth: any, router: any, permit2: any;
 
   describe("Deployment", function () {
     it("should revert if router address is zero", async function () {
       const SwapHelperTest = await hardhat.ethers.getContractFactory("SwapHelperTest");
-      await expect(SwapHelperTest.deploy(hardhat.ethers.ZeroAddress, hardhat.ethers.ZeroAddress))
+      await expect(SwapHelperTest.deploy(hardhat.ethers.ZeroAddress, hardhat.ethers.ZeroAddress, hardhat.ethers.ZeroAddress))
         .to.be.revertedWithCustomError(SwapHelperTest, "ZeroRouterAddress");
     });
   });
@@ -27,13 +27,18 @@ describe("SwapHelper", function () {
     token = await MockERC20Permit.deploy("MockToken", "MTK", 18);
     await token.waitForDeployment();
 
+    // Deploy mock Permit2
+    const MockPermit2 = await hardhat.ethers.getContractFactory("MockPermit2");
+    permit2 = await MockPermit2.deploy();
+    await permit2.waitForDeployment();
+
     // Deploy mock Universal Router
     const MockUniversalRouter = await hardhat.ethers.getContractFactory("MockUniversalRouter");
-    router = await MockUniversalRouter.deploy(await weth.getAddress());
+    router = await MockUniversalRouter.deploy(await weth.getAddress(), await permit2.getAddress());
     await router.waitForDeployment();
 
     const SwapHelperTest = await hardhat.ethers.getContractFactory("SwapHelperTest");
-    swapTest = await SwapHelperTest.deploy(await router.getAddress(), await weth.getAddress());
+    swapTest = await SwapHelperTest.deploy(await router.getAddress(), await weth.getAddress(), await permit2.getAddress());
     await swapTest.waitForDeployment();
   });
 

@@ -26,7 +26,7 @@ function buildSwapParams(tokenIn: string, poolFee: number, amountIn: bigint, amo
 
 describe("PermitSwapExecutor Main Contract", function () {
   let owner: any, maintainer: any, user: any, treasury: any;
-  let executor: any, token: any, weth: any, router: any;
+  let executor: any, token: any, weth: any, router: any, permit2: any;
 
   beforeEach(async function () {
     const signers = await hardhat.ethers.getSigners();
@@ -42,16 +42,22 @@ describe("PermitSwapExecutor Main Contract", function () {
     token = await MockERC20Permit.deploy("MockToken", "MTK", 18);
     await token.waitForDeployment();
 
+    // Deploy mock Permit2
+    const MockPermit2 = await hardhat.ethers.getContractFactory("MockPermit2");
+    permit2 = await MockPermit2.deploy();
+    await permit2.waitForDeployment();
+
     // Deploy mock Universal Router
     const MockUniversalRouter = await hardhat.ethers.getContractFactory("MockUniversalRouter");
-    router = await MockUniversalRouter.deploy(await weth.getAddress());
+    router = await MockUniversalRouter.deploy(await weth.getAddress(), await permit2.getAddress());
     await router.waitForDeployment();
 
     // Deploy main PermitSwapExecutor
     const PermitSwapExecutor = await hardhat.ethers.getContractFactory("PermitSwapExecutor");
     executor = await PermitSwapExecutor.deploy(
       await router.getAddress(),
-      await weth.getAddress()
+      await weth.getAddress(),
+      await permit2.getAddress()
     );
     await executor.waitForDeployment();
   });

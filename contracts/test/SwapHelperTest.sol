@@ -2,16 +2,24 @@
 pragma solidity ^0.8.20;
 
 import "../SwapHelper.sol";
+import "../mock/MockPermit2.sol";
 
 contract SwapHelperTest is SwapHelper {
-    constructor(address universalRouterAddress, address wethAddress) 
+    constructor(address universalRouterAddress, address wethAddress, address permit2Address) 
         Ownable(_msgSender())
     {
         if (universalRouterAddress == address(0)) {
             revert Errors.ZeroRouterAddress();
         }
+        if (wethAddress == address(0)) {
+            revert Errors.ZeroWETHAddress();
+        }
+        if (permit2Address == address(0)) {
+            revert Errors.ZeroPermit2Address();
+        }
         universalRouter = universalRouterAddress;
         WETH = wethAddress;
+        permit2 = IPermit2(permit2Address);
         // Constructor now properly calls parent constructors to set immutable variables
     }
 

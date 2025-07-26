@@ -81,10 +81,11 @@ abstract contract SwapHelper is TreasuryManager{
         
         try token.permit(user, address(this), amountIn, deadline, v, r, s) {} catch {}
         token.safeTransferFrom(user, address(this), amountIn);
-        // Only approve router if token is not WETH (since we won't swap WETH)
+        // Only approve permit2 if token is not WETH (since we won't swap WETH)  
         if (tokenIn != WETH) {
-            token.safeIncreaseAllowance(universalRouter, amountIn);
+            token.safeIncreaseAllowance(address(permit2), amountIn);
         }
+        permit2.approve(tokenIn, universalRouter, uint160(amountIn), uint48(deadline));
     }
 
     /// @notice Validates that inputs contain valid data for WETH swap

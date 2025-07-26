@@ -13,7 +13,7 @@ import "./PermitSwapExecutorState.sol";
  */
 abstract contract TreasuryManager is PermitSwapExecutorState {
     /// @notice Distributes ETH to maintainer and user, keeps treasury fee in contract
-    /// @dev Internal function that calculates and distributes fees based on current fee percentages
+    /// @dev Internal function that calculates and distributes fixed fees in wei
     /// @param ethBalance The total amount of ETH to distribute
     /// @param user The address of the user who will receive the majority of ETH
     /// @param maintainer The address of the maintainer who will receive their fee
@@ -21,8 +21,14 @@ abstract contract TreasuryManager is PermitSwapExecutorState {
     /// @return userAmount The amount of ETH sent to the user
     /// @return maintainerAmount The amount of ETH sent to the maintainer
     function _distributeETH(uint256 ethBalance, address user, address maintainer) internal returns (uint256 treasuryFee, uint256 userAmount, uint256 maintainerAmount) {
-        maintainerAmount = (ethBalance * maintainerFeePercent) / 10000; // Convert basis points to percentage
-        treasuryFee = (ethBalance * treasuryFeePercent) / 10000;       // Convert basis points to percentage
+        maintainerAmount = maintainerFeeWei;
+        treasuryFee = treasuryFeeWei;
+        
+        // Ensure we have enough ETH to cover the fees
+        if (ethBalance < maintainerAmount + treasuryFee) {
+            revert Errors.InsufficientBalance();
+        }
+        
         userAmount = ethBalance - maintainerAmount - treasuryFee;      // User gets remainder after fees
 
         payable(maintainer).transfer(maintainerAmount);
@@ -31,22 +37,22 @@ abstract contract TreasuryManager is PermitSwapExecutorState {
         // No event here - will be emitted by main contract with full details
     }
 
-    /// @notice Sets new fee percentages for maintainer and treasury
-    /// @dev Only the contract owner can call this function. Fees are capped at MAX_FEE_PERCENT
-    /// @param _maintainerFeePercent New maintainer fee in basis points (150 = 1.5%)
-    /// @param _treasuryFeePercent New treasury fee in basis points (150 = 1.5%)
-    function setFeePercents(uint256 _maintainerFeePercent, uint256 _treasuryFeePercent) external override onlyOwner {
-        if (_maintainerFeePercent > MAX_FEE_PERCENT) {
+    /// @notice Sets new fixed fees in wei for maintainer and treasury
+    /// @dev Only the contract owner can call this function. Fees are capped at MAX_FEE_WEI
+    /// @param _maintainerFeeWei New maintainer fee in wei
+    /// @param _treasuryFeeWei New treasury fee in wei
+    function setFees(uint256 _maintainerFeeWei, uint256 _treasuryFeeWei) external override onlyOwner {
+        if (_maintainerFeeWei > MAX_FEE_WEI) {
             revert Errors.MaintainerFeeTooHigh();
         }
-        if (_treasuryFeePercent > MAX_FEE_PERCENT) {
+        if (_treasuryFeeWei > MAX_FEE_WEI) {
             revert Errors.TreasuryFeeTooHigh();
         }
         
-        maintainerFeePercent = _maintainerFeePercent;
-        treasuryFeePercent = _treasuryFeePercent;
+        maintainerFeeWei = _maintainerFeeWei;
+        treasuryFeeWei = _treasuryFeeWei;
         
-        emit FeeUpdated(_maintainerFeePercent, _treasuryFeePercent);
+        emit FeeUpdated(_maintainerFeeWei, _treasuryFeeWei);
     }
 
     /// @notice Withdraws treasury funds to a specified recipient

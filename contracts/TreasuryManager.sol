@@ -7,8 +7,8 @@ import "./PermitSwapExecutorState.sol";
  * @title TreasuryManager
  * @notice Manages treasury funds and fee distribution for the DAO Station contracts
  * @dev Abstract contract that handles ETH distribution between users, maintainers, and treasury.
- *      Provides configurable fee percentages and treasury withdrawal functionality.
- *      Uses basis points for fee calculations (150 = 1.5%).
+ *      Provides configurable static fee amounts in wei and treasury withdrawal functionality.
+ *      Uses fixed amounts instead of percentage-based calculations for predictable fees.
  *      State variables are now managed in PermitSwapExecutorState.
  */
 abstract contract TreasuryManager is PermitSwapExecutorState {

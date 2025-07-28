@@ -72,7 +72,6 @@ contract MockUniversalRouter is IUniversalRouter {
         for (uint256 i = 0; i < 20; i++) {
             tokenInBytes[i] = path[i];
         }
-        address tokenIn = bytesToAddress(tokenInBytes);
         
         // Extract tokenOut from bytes 23-42 (skip the 3-byte fee)
         bytes memory tokenOutBytes = new bytes(20);

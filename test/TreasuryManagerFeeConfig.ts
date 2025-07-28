@@ -195,10 +195,10 @@ describe("TreasuryManager Fee Configuration", function () {
 
     it("should revert when ETH balance is insufficient to cover fees", async function () {
       // Set fees higher than available ETH
-      const highFee = ethers.parseEther("0.6"); // 0.6 ETH each
+      const highFee = ethers.parseEther("0.1"); // 0.1 ETH each
       await treasuryTest.connect(owner).setFees(highFee, highFee);
-      
-      const ethAmount = ethers.parseEther("1.0"); // Only 1 ETH available, but fees require 1.2 ETH
+
+      const ethAmount = ethers.parseEther("0.1"); // Only 0.1 ETH available, but fees require 0.2 ETH
       await treasuryTest.test_depositETH({ value: ethAmount });
       
       // Should revert with InsufficientBalance

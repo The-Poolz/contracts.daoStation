@@ -40,10 +40,13 @@ interface IPermitSwapExecutor {
     /// @param amount The amount of ETH withdrawn
     event TreasuryWithdrawal(address indexed recipient, uint256 amount);
     
-    /// @notice Emitted when fee amounts are updated
+    /// @notice Emitted when maintainer fee amount is updated
     /// @param maintainerFee The new maintainer fee amount in wei
+    event MaintainerFeeUpdated(uint256 maintainerFee);
+    
+    /// @notice Emitted when treasury fee amount is updated
     /// @param treasuryFee The new treasury fee amount in wei
-    event FeeUpdated(uint256 maintainerFee, uint256 treasuryFee);
+    event TreasuryFeeUpdated(uint256 treasuryFee);
 
     /// @notice Sets the authorization status for a maintainer
     /// @param maintainer The address of the maintainer to update
@@ -72,10 +75,13 @@ interface IPermitSwapExecutor {
         bytes32 s
     ) external;
 
-    /// @notice Sets new fixed fees in wei for maintainer and treasury
+    /// @notice Sets new fixed maintainer fee in wei
     /// @param _maintainerFeeWei New maintainer fee in wei
+    function setMaintainerFee(uint256 _maintainerFeeWei) external;
+
+    /// @notice Sets new fixed treasury fee in wei
     /// @param _treasuryFeeWei New treasury fee in wei
-    function setFees(uint256 _maintainerFeeWei, uint256 _treasuryFeeWei) external;
+    function setTreasuryFee(uint256 _treasuryFeeWei) external;
 
     /// @notice Withdraws treasury funds to a specified recipient
     /// @param recipient The address that will receive the withdrawn funds

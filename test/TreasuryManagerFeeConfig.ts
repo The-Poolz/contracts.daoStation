@@ -57,52 +57,84 @@ describe("TreasuryManager Fee Configuration", function () {
   });
 
   describe("Fee Configuration Management", function () {
-    it("should allow owner to set new fee amounts", async function () {
-      // Set 0.005 ETH maintainer fee and 0.02 ETH treasury fee
+    it("should allow owner to set new maintainer fee amount", async function () {
       const maintainerFee = ethers.parseEther("0.005");
-      const treasuryFee = ethers.parseEther("0.02");
       
-      await expect(treasuryTest.connect(owner).setFees(maintainerFee, treasuryFee))
-        .to.emit(treasuryTest, "FeeUpdated")
-        .withArgs(maintainerFee, treasuryFee);
+      await expect(treasuryTest.connect(owner).setMaintainerFee(maintainerFee))
+        .to.emit(treasuryTest, "MaintainerFeeUpdated")
+        .withArgs(maintainerFee);
       
       expect(await treasuryTest.maintainerFeeWei()).to.equal(maintainerFee);
+    });
+
+    it("should allow owner to set new treasury fee amount", async function () {
+      const treasuryFee = ethers.parseEther("0.02");
+      
+      await expect(treasuryTest.connect(owner).setTreasuryFee(treasuryFee))
+        .to.emit(treasuryTest, "TreasuryFeeUpdated")
+        .withArgs(treasuryFee);
+      
       expect(await treasuryTest.treasuryFeeWei()).to.equal(treasuryFee);
     });
 
-    it("should reject fee amounts above maximum", async function () {
-      const MAX_FEE = ethers.parseEther("0.1"); // 0.1 ETH
+    it("should reject maintainer fee amount above maximum", async function () {
       const OVER_MAX_FEE = ethers.parseEther("0.11"); // 0.11 ETH
       
-      await expect(treasuryTest.connect(owner).setFees(OVER_MAX_FEE, ethers.parseEther("0.01")))
+      await expect(treasuryTest.connect(owner).setMaintainerFee(OVER_MAX_FEE))
         .to.be.revertedWithCustomError(treasuryTest, "MaintainerFeeTooHigh");
+    });
+
+    it("should reject treasury fee amount above maximum", async function () {
+      const OVER_MAX_FEE = ethers.parseEther("0.11"); // 0.11 ETH
       
-      await expect(treasuryTest.connect(owner).setFees(ethers.parseEther("0.01"), OVER_MAX_FEE))
+      await expect(treasuryTest.connect(owner).setTreasuryFee(OVER_MAX_FEE))
         .to.be.revertedWithCustomError(treasuryTest, "TreasuryFeeTooHigh");
     });
 
-    it("should allow setting maximum fees", async function () {
+    it("should allow setting maximum maintainer fee", async function () {
       const MAX_FEE = ethers.parseEther("0.1"); // 0.1 ETH
       
-      await expect(treasuryTest.connect(owner).setFees(MAX_FEE, MAX_FEE))
-        .to.emit(treasuryTest, "FeeUpdated")
-        .withArgs(MAX_FEE, MAX_FEE);
+      await expect(treasuryTest.connect(owner).setMaintainerFee(MAX_FEE))
+        .to.emit(treasuryTest, "MaintainerFeeUpdated")
+        .withArgs(MAX_FEE);
       
       expect(await treasuryTest.maintainerFeeWei()).to.equal(MAX_FEE);
+    });
+
+    it("should allow setting maximum treasury fee", async function () {
+      const MAX_FEE = ethers.parseEther("0.1"); // 0.1 ETH
+      
+      await expect(treasuryTest.connect(owner).setTreasuryFee(MAX_FEE))
+        .to.emit(treasuryTest, "TreasuryFeeUpdated")
+        .withArgs(MAX_FEE);
+      
       expect(await treasuryTest.treasuryFeeWei()).to.equal(MAX_FEE);
     });
 
-    it("should allow setting zero fees", async function () {
-      await expect(treasuryTest.connect(owner).setFees(0, 0))
-        .to.emit(treasuryTest, "FeeUpdated")
-        .withArgs(0, 0);
+    it("should allow setting zero maintainer fee", async function () {
+      await expect(treasuryTest.connect(owner).setMaintainerFee(0))
+        .to.emit(treasuryTest, "MaintainerFeeUpdated")
+        .withArgs(0);
       
       expect(await treasuryTest.maintainerFeeWei()).to.equal(0);
+    });
+
+    it("should allow setting zero treasury fee", async function () {
+      await expect(treasuryTest.connect(owner).setTreasuryFee(0))
+        .to.emit(treasuryTest, "TreasuryFeeUpdated")
+        .withArgs(0);
+      
       expect(await treasuryTest.treasuryFeeWei()).to.equal(0);
     });
 
-    it("should reject non-owner attempting to set fees", async function () {
-      await expect(treasuryTest.connect(nonOwner).setFees(ethers.parseEther("0.005"), ethers.parseEther("0.02")))
+    it("should reject non-owner attempting to set maintainer fee", async function () {
+      await expect(treasuryTest.connect(nonOwner).setMaintainerFee(ethers.parseEther("0.005")))
+        .to.be.revertedWithCustomError(treasuryTest, "OwnableUnauthorizedAccount")
+        .withArgs(nonOwner.address);
+    });
+
+    it("should reject non-owner attempting to set treasury fee", async function () {
+      await expect(treasuryTest.connect(nonOwner).setTreasuryFee(ethers.parseEther("0.02")))
         .to.be.revertedWithCustomError(treasuryTest, "OwnableUnauthorizedAccount")
         .withArgs(nonOwner.address);
     });
@@ -113,7 +145,8 @@ describe("TreasuryManager Fee Configuration", function () {
       // Set 0.005 ETH maintainer fee and 0.02 ETH treasury fee
       const maintainerFee = ethers.parseEther("0.005");
       const treasuryFee = ethers.parseEther("0.02");
-      await treasuryTest.connect(owner).setFees(maintainerFee, treasuryFee);
+      await treasuryTest.connect(owner).setMaintainerFee(maintainerFee);
+      await treasuryTest.connect(owner).setTreasuryFee(treasuryFee);
       
       const ethAmount = ethers.parseEther("1.0");
       await treasuryTest.test_depositETH({ value: ethAmount });
@@ -141,7 +174,8 @@ describe("TreasuryManager Fee Configuration", function () {
 
     it("should handle zero fees correctly", async function () {
       // Set zero fees
-      await treasuryTest.connect(owner).setFees(0, 0);
+      await treasuryTest.connect(owner).setMaintainerFee(0);
+      await treasuryTest.connect(owner).setTreasuryFee(0);
       
       const ethAmount = ethers.parseEther("1.0");
       await treasuryTest.test_depositETH({ value: ethAmount });
@@ -167,7 +201,8 @@ describe("TreasuryManager Fee Configuration", function () {
     it("should handle maximum fees correctly", async function () {
       // Set maximum fees (0.1 ETH each)
       const MAX_FEE = ethers.parseEther("0.1");
-      await treasuryTest.connect(owner).setFees(MAX_FEE, MAX_FEE);
+      await treasuryTest.connect(owner).setMaintainerFee(MAX_FEE);
+      await treasuryTest.connect(owner).setTreasuryFee(MAX_FEE);
       
       const ethAmount = ethers.parseEther("1.0");
       await treasuryTest.test_depositETH({ value: ethAmount });
@@ -196,7 +231,8 @@ describe("TreasuryManager Fee Configuration", function () {
     it("should revert when ETH balance is insufficient to cover fees", async function () {
       // Set fees higher than available ETH
       const highFee = ethers.parseEther("0.1"); // 0.1 ETH each
-      await treasuryTest.connect(owner).setFees(highFee, highFee);
+      await treasuryTest.connect(owner).setMaintainerFee(highFee);
+      await treasuryTest.connect(owner).setTreasuryFee(highFee);
 
       const ethAmount = ethers.parseEther("0.1"); // Only 0.1 ETH available, but fees require 0.2 ETH
       await treasuryTest.test_depositETH({ value: ethAmount });

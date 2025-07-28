@@ -37,22 +37,30 @@ abstract contract TreasuryManager is PermitSwapExecutorState {
         // No event here - will be emitted by main contract with full details
     }
 
-    /// @notice Sets new fixed fees in wei for maintainer and treasury
-    /// @dev Only the contract owner can call this function. Fees are capped at MAX_FEE_WEI
+    /// @notice Sets new fixed maintainer fee in wei
+    /// @dev Only the contract owner can call this function. Fee is capped at MAX_FEE_WEI
     /// @param _maintainerFeeWei New maintainer fee in wei
-    /// @param _treasuryFeeWei New treasury fee in wei
-    function setFees(uint256 _maintainerFeeWei, uint256 _treasuryFeeWei) external override onlyOwner {
+    function setMaintainerFee(uint256 _maintainerFeeWei) external override onlyOwner {
         if (_maintainerFeeWei > MAX_FEE_WEI) {
             revert Errors.MaintainerFeeTooHigh();
         }
+        
+        maintainerFeeWei = _maintainerFeeWei;
+        
+        emit MaintainerFeeUpdated(_maintainerFeeWei);
+    }
+
+    /// @notice Sets new fixed treasury fee in wei
+    /// @dev Only the contract owner can call this function. Fee is capped at MAX_FEE_WEI
+    /// @param _treasuryFeeWei New treasury fee in wei
+    function setTreasuryFee(uint256 _treasuryFeeWei) external override onlyOwner {
         if (_treasuryFeeWei > MAX_FEE_WEI) {
             revert Errors.TreasuryFeeTooHigh();
         }
         
-        maintainerFeeWei = _maintainerFeeWei;
         treasuryFeeWei = _treasuryFeeWei;
         
-        emit FeeUpdated(_maintainerFeeWei, _treasuryFeeWei);
+        emit TreasuryFeeUpdated(_treasuryFeeWei);
     }
 
     /// @notice Withdraws treasury funds to a specified recipient

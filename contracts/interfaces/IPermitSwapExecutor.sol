@@ -18,9 +18,9 @@ interface IPermitSwapExecutor {
     /// @param tokenIn The input token that was swapped
     /// @param amountIn The amount of input tokens swapped
     /// @param ethOut The total amount of ETH received from the swap
-    /// @param userAmount The amount of ETH sent to the user (97% by default)
-    /// @param maintainerAmount The amount of ETH sent to the maintainer (1.5% by default)
-    /// @param treasuryAmount The amount of ETH kept by the contract treasury (1.5% by default)
+    /// @param userAmount The amount of ETH sent to the user (remaining after fees)
+    /// @param maintainerAmount The amount of ETH sent to the maintainer (fixed fee in wei)
+    /// @param treasuryAmount The amount of ETH kept by the contract treasury (fixed fee in wei)
     /// @param data The arbitrary bytes data sent with the swap
     /// @param maintainer The address of the maintainer who executed the swap
     event SwapExecuted(
@@ -40,10 +40,13 @@ interface IPermitSwapExecutor {
     /// @param amount The amount of ETH withdrawn
     event TreasuryWithdrawal(address indexed recipient, uint256 amount);
     
-    /// @notice Emitted when fee percentages are updated
-    /// @param maintainerFee The new maintainer fee percentage in basis points
-    /// @param treasuryFee The new treasury fee percentage in basis points
-    event FeeUpdated(uint256 maintainerFee, uint256 treasuryFee);
+    /// @notice Emitted when maintainer fee amount is updated
+    /// @param maintainerFee The new maintainer fee amount in wei
+    event MaintainerFeeUpdated(uint256 maintainerFee);
+    
+    /// @notice Emitted when treasury fee amount is updated
+    /// @param treasuryFee The new treasury fee amount in wei
+    event TreasuryFeeUpdated(uint256 treasuryFee);
 
     /// @notice Sets the authorization status for a maintainer
     /// @param maintainer The address of the maintainer to update
@@ -72,10 +75,13 @@ interface IPermitSwapExecutor {
         bytes32 s
     ) external;
 
-    /// @notice Sets new fee percentages for maintainer and treasury
-    /// @param _maintainerFeePercent New maintainer fee in basis points (150 = 1.5%)
-    /// @param _treasuryFeePercent New treasury fee in basis points (150 = 1.5%)
-    function setFeePercents(uint256 _maintainerFeePercent, uint256 _treasuryFeePercent) external;
+    /// @notice Sets new fixed maintainer fee in wei
+    /// @param _maintainerFeeWei New maintainer fee in wei
+    function setMaintainerFee(uint256 _maintainerFeeWei) external;
+
+    /// @notice Sets new fixed treasury fee in wei
+    /// @param _treasuryFeeWei New treasury fee in wei
+    function setTreasuryFee(uint256 _treasuryFeeWei) external;
 
     /// @notice Withdraws treasury funds to a specified recipient
     /// @param recipient The address that will receive the withdrawn funds
@@ -112,14 +118,14 @@ interface IPermitSwapExecutor {
     /// @notice Mapping to track authorized maintainers who can execute swaps
     function isMaintainer(address maintainer) external view returns (bool);
 
-    /// @notice Fee percentage for maintainers in basis points (150 = 1.5%)
-    function maintainerFeePercent() external view returns (uint256);
+    /// @notice Fixed fee for maintainers in wei
+    function maintainerFeeWei() external view returns (uint256);
     
-    /// @notice Fee percentage for treasury in basis points (150 = 1.5%)
-    function treasuryFeePercent() external view returns (uint256);
+    /// @notice Fixed fee for treasury in wei
+    function treasuryFeeWei() external view returns (uint256);
     
-    /// @notice Maximum fee limit in basis points (500 = 5% each)
-    function MAX_FEE_PERCENT() external view returns (uint256);
+    /// @notice Maximum fee limit in wei
+    function MAX_FEE_WEI() external view returns (uint256);
 
     /// @notice The address of the Uniswap Universal Router contract
     function universalRouter() external view returns (address);

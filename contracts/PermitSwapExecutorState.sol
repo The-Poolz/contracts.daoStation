@@ -26,17 +26,17 @@ abstract contract PermitSwapExecutorState is
     /// @notice Mapping to track authorized maintainers who can execute swaps
     mapping(address => bool) public isMaintainer;
 
-    /// @notice Fee percentage for maintainers in basis points (150 = 1.5%)
-    /// @dev Default is 150 basis points (1.5%), maximum allowed is 500 basis points (5%)
-    uint256 public maintainerFeePercent = 150; // 1.5% default
+    /// @notice Fixed fee for maintainers in wei
+    /// @dev Default is 0.01 ETH (10^16 wei)
+    uint256 public maintainerFeeWei = 10**16; // 0.01 ETH default
 
-    /// @notice Fee percentage for treasury in basis points (150 = 1.5%)
-    /// @dev Default is 150 basis points (1.5%), maximum allowed is 500 basis points (5%)
-    uint256 public treasuryFeePercent = 150; // 1.5% default
+    /// @notice Fixed fee for treasury in wei
+    /// @dev Default is 0.01 ETH (10^16 wei)
+    uint256 public treasuryFeeWei = 10**16; // 0.01 ETH default
 
-    /// @notice Maximum fee limit in basis points (500 = 5% each)
+    /// @notice Maximum fee limit in wei (0.1 ETH)
     /// @dev Prevents owner from setting excessive fees that would be unfair to users
-    uint256 public constant MAX_FEE_PERCENT = 500;
+    uint256 public constant MAX_FEE_WEI = 10**17; // 0.1 ETH
 
     /// @notice The address of the Uniswap Universal Router contract
     /// @dev Used for executing token swaps on Uniswap v2, v3, and v4 protocols

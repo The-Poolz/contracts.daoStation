@@ -24,7 +24,7 @@ describe("TreasuryManager", function () {
     await treasuryTest.waitForDeployment();
   });
 
-  it("should distribute ETH correctly", async function () {
+  it("should distribute ETH correctly with static fees", async function () {
     const ethAmount = ethers.parseEther("1.0");
     await treasuryTest.test_depositETH({ value: ethAmount });
     
@@ -39,9 +39,13 @@ describe("TreasuryManager", function () {
     const userFinalBalance = await ethers.provider.getBalance(user.address);
     const ownerFinalBalance = await ethers.provider.getBalance(owner.address);
     
-    expect(userFinalBalance - userInitialBalance).to.equal(ethers.parseEther("0.97"));
+    // With static fees of 0.01 ETH each:
+    // Maintainer: 0.01 ETH
+    // Treasury: 0.01 ETH  
+    // User: 1 ETH - 0.01 - 0.01 = 0.98 ETH
+    expect(userFinalBalance - userInitialBalance).to.equal(ethers.parseEther("0.98"));
     // Owner gets maintainer fee minus gas costs
-    expect(ownerFinalBalance - ownerInitialBalance + gasUsed).to.equal(ethers.parseEther("0.015"));
+    expect(ownerFinalBalance - ownerInitialBalance + gasUsed).to.equal(ethers.parseEther("0.01"));
   });
 
   it("should allow owner to withdraw treasury", async function () {

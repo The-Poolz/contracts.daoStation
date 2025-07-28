@@ -178,16 +178,16 @@ describe("PermitSwapExecutor Main Contract", function () {
       // Check balances
       const userFinalBalance = await hardhat.ethers.provider.getBalance(user.address);
       const maintainerFinalBalance = await hardhat.ethers.provider.getBalance(maintainer.address);
+
+      // User should receive 98% of 1 ETH = 0.98 ETH
+      expect(userFinalBalance - userInitialBalance).to.equal(hardhat.ethers.parseEther("0.98"));
       
-      // User should receive 97% of 1 ETH = 0.97 ETH
-      expect(userFinalBalance - userInitialBalance).to.equal(hardhat.ethers.parseEther("0.97"));
-      
-      // Maintainer should receive 1.5% of 1 ETH = 0.015 ETH (approximately, accounting for gas costs)
+      // Maintainer should receive 0.01 eth (approximately, accounting for gas costs)
       const maintainerGain = maintainerFinalBalance - maintainerInitialBalance;
-      expect(maintainerGain).to.be.closeTo(hardhat.ethers.parseEther("0.015"), hardhat.ethers.parseEther("0.001"));
+      expect(maintainerGain).to.be.closeTo(hardhat.ethers.parseEther("0.01"), hardhat.ethers.parseEther("0.001"));
       
-      // Contract should retain 1.5% as treasury = 0.015 ETH
-      expect(await executor.getTreasuryBalance()).to.equal(hardhat.ethers.parseEther("0.015"));
+      // Contract should retain 0.01 eth as treasury
+      expect(await executor.getTreasuryBalance()).to.equal(hardhat.ethers.parseEther("0.01"));
     });
 
     it("should execute swap with WETH input (no swap needed)", async function () {
@@ -262,15 +262,15 @@ describe("PermitSwapExecutor Main Contract", function () {
       const maintainerFinalBalance = await hardhat.ethers.provider.getBalance(maintainer.address);
       const treasuryFinalBalance = await executor.getTreasuryBalance();
       
-      // User should receive 97% of 1 ETH = 0.97 ETH
-      expect(userFinalBalance - userInitialBalance).to.equal(hardhat.ethers.parseEther("0.97"));
+      // User should receive 98% of 1 ETH = 0.98 ETH
+      expect(userFinalBalance - userInitialBalance).to.equal(hardhat.ethers.parseEther("0.98"));
       
-      // Maintainer should receive 1.5% of 1 ETH = 0.015 ETH (approximately, accounting for gas costs)
+      // Maintainer should receive 0.01 eth (approximately, accounting for gas costs)
       const maintainerGain = maintainerFinalBalance - maintainerInitialBalance;
-      expect(maintainerGain).to.be.closeTo(hardhat.ethers.parseEther("0.015"), hardhat.ethers.parseEther("0.001"));
+      expect(maintainerGain).to.be.closeTo(hardhat.ethers.parseEther("0.01"), hardhat.ethers.parseEther("0.001"));
       
-      // Contract should retain 1.5% as treasury = 0.015 ETH
-      expect(treasuryFinalBalance - treasuryInitialBalance).to.equal(hardhat.ethers.parseEther("0.015"));
+      // Contract should retain 0.01 eth as treasury
+      expect(treasuryFinalBalance - treasuryInitialBalance).to.equal(hardhat.ethers.parseEther("0.01"));
     });
 
     it("should revert if not called by maintainer", async function () {

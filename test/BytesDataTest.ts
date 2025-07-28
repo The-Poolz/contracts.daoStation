@@ -137,9 +137,9 @@ describe("PermitSwapExecutor Bytes Data", function () {
           await token.getAddress(),
           tokenAmount,
           hardhat.ethers.parseEther("1"), // 1 ETH received
-          hardhat.ethers.parseEther("0.97"), // 97% to user
-          hardhat.ethers.parseEther("0.015"), // 1.5% to maintainer
-          hardhat.ethers.parseEther("0.015"), // 1.5% to treasury
+          hardhat.ethers.parseEther("0.98"), // 0.98 eth to user
+          hardhat.ethers.parseEther("0.01"), // 0.01 eth to maintainer
+          hardhat.ethers.parseEther("0.01"), // 0.01 eth to treasury
           emptyData,
           maintainer.address
         );
@@ -215,9 +215,9 @@ describe("PermitSwapExecutor Bytes Data", function () {
           await weth.getAddress(),
           wethAmount,
           hardhat.ethers.parseEther("1"),
-          hardhat.ethers.parseEther("0.97"),
-          hardhat.ethers.parseEther("0.015"),
-          hardhat.ethers.parseEther("0.015"),
+          hardhat.ethers.parseEther("0.98"),
+          hardhat.ethers.parseEther("0.01"),
+          hardhat.ethers.parseEther("0.01"),
           customData,
           maintainer.address
         );

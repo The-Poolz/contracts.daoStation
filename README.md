@@ -8,9 +8,9 @@ A secure and modular smart contract that enables gasless token swaps using `ERC-
 - 🔁 Swaps any ERC-20 token to WETH via Uniswap
 - 💧 Unwraps WETH to ETH
 - 📤 Sends ETH to:
-  - 1.5% Maintainer (`msg.sender`)
-  - 1.5% Contract Treasury
-  - 97% Back to original user
+  - Fixed fee to Maintainer (`msg.sender`) - default 0.01 ETH
+  - Fixed fee to Contract Treasury - default 0.01 ETH  
+  - Remainder back to original user
 - 🔐 Only approved maintainers can execute logic
 - 🛡️ Protected against reentrancy attacks
 
@@ -28,8 +28,8 @@ Instead, a trusted maintainer executes the flow on their behalf using a signatur
 | Role         | Source           | Description                       |
 |--------------|------------------|-----------------------------------|
 | User (Owner) | Permit Signature | Owns the tokens                   |
-| Maintainer   | msg.sender       | Must be whitelisted, gets 1.5%   |
-| Contract     | address(this)    | Keeps 1.5% for gas/treasury      |
+| Maintainer   | msg.sender       | Must be whitelisted, gets fixed fee (default 0.01 ETH)   |
+| Contract     | address(this)    | Keeps fixed fee for gas/treasury (default 0.01 ETH)      |
 
 ---
 
@@ -40,9 +40,9 @@ Instead, a trusted maintainer executes the flow on their behalf using a signatur
 3. 🔁 Tokens are swapped to **WETH** via Uniswap
 4. 🔁 WETH is unwrapped to **ETH**
 5. 💸 ETH is split:
-   - `1.5%` → `msg.sender` (maintainer)
-   - `1.5%` → Contract (treasury)
-   - `97%` → User (original signer)
+   - Fixed fee → `msg.sender` (maintainer) - default 0.01 ETH
+   - Fixed fee → Contract (treasury) - default 0.01 ETH
+   - Remainder → User (original signer)
 6. 🔐 All actions are performed atomically
 
 ---
@@ -179,7 +179,7 @@ executeSwap(
 )
 ```
 
-Result: User receives 97% of swapped ETH, maintainer gets 1.5%, treasury keeps 1.5%
+Result: User receives swapped ETH minus fixed fees, maintainer gets fixed fee (default 0.01 ETH), treasury keeps fixed fee (default 0.01 ETH)
 
 ---
 

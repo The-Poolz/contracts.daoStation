@@ -76,16 +76,17 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         // Check the first command to determine how to extract amountIn
         uint8 firstCommand = uint8(commands[0]);
         uint256 amountIn;
-        bytes memory path;
         
         if (firstCommand == 0x0c) {
             // UNWRAP_WETH command: (address recipient, uint256 amount)
             (, amountIn) = abi.decode(inputs[0], (address, uint256));
         } else {
+            bytes memory path;
             // V3_SWAP_EXACT_IN command: (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
             (, amountIn, , path, ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
+            // For non-WETH tokens, extract path for validation
+            _validateInputParams(path);
         }
-        
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         
@@ -94,8 +95,6 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         if (tokenIn == WETH) {
             wethReceived = _swapToWETH(commands, inputs, deadline);
         } else {
-            // For non-WETH tokens, extract path for validation
-            _validateInputParams(path);
             wethReceived = _swapToWETH(commands, inputs, deadline);
         }
         

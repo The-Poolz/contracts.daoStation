@@ -1,11 +1,15 @@
 # PermitSwapExecutor
 
+[![Build and Test](https://github.com/The-Poolz/contracts.daoStation/actions/workflows/build.yml/badge.svg)](https://github.com/The-Poolz/contracts.daoStation/actions/workflows/build.yml)
+[![codecov](https://codecov.io/gh/The-Poolz/contracts.daoStation/graph/badge.svg)](https://codecov.io/gh/The-Poolz/contracts.daoStation)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/The-Poolz/contracts.daoStation/blob/master/LICENSE)
+
 A secure and modular smart contract that enables gasless token swaps using `ERC-2612 permit`, Uniswap integration, and reward distribution — all in a single atomic transaction.
 
 ## 🧩 Key Features
 
 - 📝 Accepts off-chain signed `permit()` from users (ERC-2612)
-- 🔁 Swaps any ERC-20 token to WETH via Uniswap
+- 🔁 Swaps any ERC-20 token to WETH via Uniswap Universal Router
 - 💧 Unwraps WETH to ETH
 - 📤 Sends ETH to:
   - Fixed fee to Maintainer (`msg.sender`) - default 0.01 ETH
@@ -37,7 +41,7 @@ Instead, a trusted maintainer executes the flow on their behalf using a signatur
 
 1. ✅ `permit()` is called using the user’s signature
 2. ✅ Tokens are `transferFrom()` user's wallet to contract
-3. 🔁 Tokens are swapped to **WETH** via Uniswap
+3. 🔁 Tokens are swapped to **WETH** via Uniswap Universal Router
 4. 🔁 WETH is unwrapped to **ETH**
 5. 💸 ETH is split:
    - Fixed fee → `msg.sender` (maintainer) - default 0.01 ETH
@@ -51,13 +55,26 @@ Instead, a trusted maintainer executes the flow on their behalf using a signatur
 
 ### `executeSwap(...)`
 
-Executes the full logic in one transaction:
+Executes the full logic in one transaction using Uniswap's Universal Router:
 
 - `permit` usage
-- Swap via Uniswap
+- Swap via Uniswap Universal Router
 - ETH distribution
 
 > Can only be called by an **authorized maintainer**
+
+**Function signature:**
+```solidity
+function executeSwap(
+    address tokenIn,        // The ERC-20 token to swap (must support ERC-2612 permit)
+    bytes calldata commands,// The encoded commands for UniversalRouter execution
+    bytes[] calldata inputs,// The encoded inputs array corresponding to the commands
+    address user,           // The original token owner who signed the permit
+    bytes calldata data,    // Arbitrary bytes data to include with the swap
+    uint deadline,          // The permit signature deadline
+    uint8 v, bytes32 r, bytes32 s  // Permit signature components
+) external
+```
 
 ### `isValidSignature(...)`
 
@@ -97,7 +114,7 @@ function isValidSignature(
 ## 📜 Requirements
 
 - Token must support `ERC-2612` (e.g. USDC, DAI, etc)
-- Swap pair must exist on Uniswap V3
+- Swap routes must be supported by Uniswap Universal Router
 - Contract must be pre-approved in `permit()` signature
 - Maintainer must be whitelisted by contract owner
 
@@ -125,7 +142,7 @@ pnpm install
 pnpm test
 
 # Run with coverage
-npx hardhat coverage
+pnpm hardhat coverage
 ```
 
 Current test coverage: **95.45%** statements, **86.67%** functions
@@ -152,11 +169,6 @@ Current test coverage: **95.45%** statements, **86.67%** functions
 
 ## 🧠 Example
 
-User signs:
-
-```solidity
-## 🧠 Example
-
 User creates a permit signature off-chain:
 
 ```solidity
@@ -167,14 +179,12 @@ Maintainer executes the swap:
 
 ```solidity
 executeSwap(
-    tokenIn,       // ERC20 token address
-    poolFee,       // Uniswap pool fee (3000 = 0.3%)
-    amountIn,      // Amount of tokens to swap
-    amountOutMin,  // Minimum ETH to receive
-    sqrtPriceLimitX96, // Price limit (0 = no limit)
-    user,          // Original token owner
-    data,          // Arbitrary bytes data to include with swap
-    deadline,      // Permit deadline
+    tokenIn,       // ERC-20 token address (must support ERC-2612 permit)
+    commands,      // The encoded commands for UniversalRouter execution
+    inputs,        // The encoded inputs array corresponding to the commands
+    user,          // The original token owner who signed the permit
+    data,          // Arbitrary bytes data to include with the swap
+    deadline,      // The permit signature deadline
     v, r, s        // Permit signature components
 )
 ```

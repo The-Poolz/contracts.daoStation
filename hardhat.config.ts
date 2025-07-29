@@ -12,6 +12,9 @@ const config: HardhatUserConfig = {
         runs: 200,
       },
       viaIR: true,
+      metadata: {
+        bytecodeHash: "none",
+      },
     },
   },
   paths: {

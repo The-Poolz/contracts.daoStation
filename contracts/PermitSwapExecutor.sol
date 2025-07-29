@@ -73,25 +73,26 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         bytes32 r,
         bytes32 s
     ) external override onlyMaintainer nonReentrant validUser(user) validDeadline(deadline) nonEmptyCommands(commands) nonEmptyInputs(inputs) {
-        // Extract amountIn from the inputs to prepare the token
-        (, uint256 amountIn, , bytes memory path, ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
+        // Check the first command to determine how to extract amountIn
+        uint8 firstCommand = uint8(commands[0]);
+        uint256 amountIn;
         
+        if (firstCommand == 0x0c) {
+            // UNWRAP_WETH command: (address recipient, uint256 amount)
+            (, amountIn) = abi.decode(inputs[0], (address, uint256));
+        } else {
+            bytes memory path;
+            // V3_SWAP_EXACT_IN command: (address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser)
+            (, amountIn, , path, ) = abi.decode(inputs[0], (address, uint256, uint256, bytes, bool));
+            // For non-WETH tokens, extract path for validation
+            _validateInputParams(path);
+        }
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         
-        uint wethReceived;
-        // If input token is WETH, skip swap
-        if (tokenIn == WETH) {
-            wethReceived = amountIn;
-        } else {
-            // Swap to WETH using external commands and inputs
-            _validateInputParams(path);
-            wethReceived = _swapToWETH(commands, inputs, deadline);
-        }
-        
-        // Unwrap WETH to ETH
-        _unwrapWETH(wethReceived);
-        
+        // If input token is WETH, execute unwrap command directly
+        uint wethReceived = _swapToWETH(commands, inputs, deadline);
+
         // Distribute ETH (configurable fees to maintainer and treasury, rest to user)
         (uint256 treasuryFee, uint256 userAmt, uint256 maintainerAmt) = _distributeETH(wethReceived, user, msg.sender);
         

@@ -90,14 +90,9 @@ contract PermitSwapExecutor is TreasuryManager, SwapHelper {
         // prepare token: permit, transfer, and approve        
         _prepareToken(tokenIn, user, amountIn, deadline, v, r, s);
         
-        uint wethReceived;
         // If input token is WETH, execute unwrap command directly
-        if (tokenIn == WETH) {
-            wethReceived = _swapToWETH(commands, inputs, deadline);
-        } else {
-            wethReceived = _swapToWETH(commands, inputs, deadline);
-        }
-        
+        uint wethReceived = _swapToWETH(commands, inputs, deadline);
+
         // Distribute ETH (configurable fees to maintainer and treasury, rest to user)
         (uint256 treasuryFee, uint256 userAmt, uint256 maintainerAmt) = _distributeETH(wethReceived, user, msg.sender);
         

@@ -24,6 +24,31 @@ function buildSwapParams(tokenIn: string, poolFee: number, amountIn: bigint, amo
   return { commands, inputs };
 }
 
+// Helper function to build swap+unwrap commands and inputs  
+function buildSwapAndUnwrapParams(tokenIn: string, poolFee: number, amountIn: bigint, amountOutMin: bigint, recipient: string, wethAddress: string) {
+  // Commands: 0x00 = V3_SWAP_EXACT_IN, 0x0c = UNWRAP_WETH  
+  const commands = hardhat.ethers.solidityPacked(["uint8", "uint8"], [0x00, 0x0c]);
+  
+  const path = hardhat.ethers.solidityPacked(
+    ["address", "uint24", "address"], 
+    [tokenIn, poolFee, wethAddress]
+  );
+  
+  // Input 1: V3_SWAP_EXACT_IN parameters
+  const swapInput = hardhat.ethers.AbiCoder.defaultAbiCoder().encode(
+    ["address", "uint256", "uint256", "bytes", "bool"],
+    [wethAddress, amountIn, amountOutMin, path, false] // recipient is WETH for intermediate step
+  );
+  
+  // Input 2: UNWRAP_WETH parameters 
+  const unwrapInput = hardhat.ethers.AbiCoder.defaultAbiCoder().encode(
+    ["address", "uint256"],
+    [recipient, amountIn] // recipient gets ETH, amount is expected 1:1 output
+  );
+  
+  return { commands, inputs: [swapInput, unwrapInput] };
+}
+
 describe("PermitSwapExecutor Main Contract", function () {
   let owner: any, maintainer: any, user: any, treasury: any;
   let executor: any, token: any, weth: any, router: any, permit2: any;
@@ -110,6 +135,13 @@ describe("PermitSwapExecutor Main Contract", function () {
       const wethAmount = hardhat.ethers.parseEther("2");
       await weth.deposit({ value: wethAmount });
       await weth.transfer(await router.getAddress(), wethAmount);
+      
+      // Fund router with ETH for unwrapping operations
+      const ethAmount = hardhat.ethers.parseEther("2");
+      await owner.sendTransaction({
+        to: await router.getAddress(),
+        value: ethAmount
+      });
     });
 
     it("should execute swap successfully", async function () {
@@ -153,7 +185,7 @@ describe("PermitSwapExecutor Main Contract", function () {
       const testData = hardhat.ethers.toUtf8Bytes("test swap data");
       
       // Build swap parameters
-      const { commands, inputs } = buildSwapParams(
+      const { commands, inputs } = buildSwapAndUnwrapParams(
         await token.getAddress(),
         3000,
         tokenAmount,
@@ -235,7 +267,7 @@ describe("PermitSwapExecutor Main Contract", function () {
       const testData = hardhat.ethers.toUtf8Bytes("weth swap data");
       
       // Build swap parameters (even though no swap will happen since input is WETH)
-      const { commands, inputs } = buildSwapParams(
+      const { commands, inputs } = buildSwapAndUnwrapParams(
         await weth.getAddress(),
         3000,
         wethAmount,

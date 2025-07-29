@@ -44,9 +44,11 @@ contract MockUniversalRouter is IUniversalRouter {
         for (uint256 i = 0; i < commands.length; i++) {
             uint8 command = uint8(commands[i]);
             
-            // Only handle V3_SWAP_EXACT_IN command (0x00)
+            // Handle supported commands
             if (command == 0x00) {
                 _executeV3SwapExactIn(inputs[i]);
+            } else if (command == 0x0c) {
+                _executeUnwrapWeth(inputs[i]);
             } else {
                 revert("Unsupported command in mock");
             }
@@ -93,6 +95,20 @@ contract MockUniversalRouter is IUniversalRouter {
         require(IERC20(tokenOut).transfer(recipient, amountOut), "Output token transfer failed");
     }
     
+    /// @notice Executes a mock WETH unwrap command
+    /// @dev Simplified unwrap implementation that sends ETH to the recipient
+    /// @param input The encoded input parameters for the unwrap
+    function _executeUnwrapWeth(bytes calldata input) internal {
+        // Decode the input parameters: (address recipient, uint256 amount)
+        (address recipient, uint256 amount) = abi.decode(input, (address, uint256));
+        
+        // Check if this contract has enough ETH balance
+        require(address(this).balance >= amount, "Insufficient ETH balance for unwrap");
+        
+        // Send ETH to recipient (simulating WETH unwrapping)
+        payable(recipient).transfer(amount);
+    }
+    
     /// @notice Helper function to convert bytes to address
     /// @param _bytes The bytes to convert (must be 20 bytes)
     /// @return addr The resulting address
@@ -102,4 +118,8 @@ contract MockUniversalRouter is IUniversalRouter {
             addr := mload(add(_bytes, 20))
         }
     }
+    
+    /// @notice Allows the contract to receive ETH
+    /// @dev This is needed for ETH transfers to fund unwrapping operations
+    receive() external payable {}
 }

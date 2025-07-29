@@ -24,6 +24,47 @@ function buildSwapParams(tokenIn: string, poolFee: number, amountIn: bigint, amo
   return { commands, inputs };
 }
 
+// Helper function to build swap+unwrap commands and inputs
+function buildSwapAndUnwrapParams(tokenIn: string, poolFee: number, amountIn: bigint, amountOutMin: bigint, recipient: string, wethAddress: string) {
+  // Commands: 0x00 = V3_SWAP_EXACT_IN, 0x0c = UNWRAP_WETH  
+  const commands = hardhat.ethers.solidityPacked(["uint8", "uint8"], [0x00, 0x0c]);
+  
+  const path = hardhat.ethers.solidityPacked(
+    ["address", "uint24", "address"], 
+    [tokenIn, poolFee, wethAddress]
+  );
+  
+  // Input 1: V3_SWAP_EXACT_IN parameters
+  const swapInput = hardhat.ethers.AbiCoder.defaultAbiCoder().encode(
+    ["address", "uint256", "uint256", "bytes", "bool"],
+    [wethAddress, amountIn, amountOutMin, path, false] // recipient is WETH for intermediate step
+  );
+  
+  // Input 2: UNWRAP_WETH parameters 
+  const unwrapInput = hardhat.ethers.AbiCoder.defaultAbiCoder().encode(
+    ["address", "uint256"],
+    [recipient, amountIn] // recipient gets ETH, amount is expected 1:1 output
+  );
+  
+  return { commands, inputs: [swapInput, unwrapInput] };
+}
+
+// Helper function to build WETH-only unwrap commands and inputs
+function buildWETHUnwrapParams(amountIn: bigint, recipient: string) {
+  // Commands: 0x0c = UNWRAP_WETH only
+  const commands = hardhat.ethers.solidityPacked(["uint8"], [0x0c]);
+  
+  // Single input: UNWRAP_WETH parameters
+  const inputs = [
+    hardhat.ethers.AbiCoder.defaultAbiCoder().encode(
+      ["address", "uint256"],
+      [recipient, amountIn]
+    )
+  ];
+  
+  return { commands, inputs };
+}
+
 describe("PermitSwapExecutor Bytes Data", function () {
   let owner: any, maintainer: any, user: any;
   let executor: any, token: any, weth: any, router: any, permit2: any;
@@ -63,6 +104,12 @@ describe("PermitSwapExecutor Bytes Data", function () {
 
     // Set maintainer
     await executor.connect(owner).setMaintainer(maintainer.address, true);
+    
+    // Fund router with ETH for unwrapping operations
+    await owner.sendTransaction({
+      to: await router.getAddress(),
+      value: hardhat.ethers.parseEther("10")
+    });
   });
 
   describe("Bytes Data Functionality", function () {
@@ -77,6 +124,13 @@ describe("PermitSwapExecutor Bytes Data", function () {
       const wethAmount = hardhat.ethers.parseEther("2");
       await weth.deposit({ value: wethAmount });
       await weth.transfer(await router.getAddress(), wethAmount);
+      
+      // Fund router with ETH for unwrapping operations
+      const ethAmount = hardhat.ethers.parseEther("2");
+      await owner.sendTransaction({
+        to: await router.getAddress(),
+        value: ethAmount
+      });
 
       // Create permit signature
       const nonce = await token.nonces(user.address);
@@ -111,8 +165,8 @@ describe("PermitSwapExecutor Bytes Data", function () {
       // Test with empty bytes
       const emptyData = "0x";
       
-      // Build swap parameters
-      const { commands, inputs } = buildSwapParams(
+      // Build swap and unwrap parameters
+      const { commands, inputs } = buildSwapAndUnwrapParams(
         await token.getAddress(),
         3000,
         tokenAmount,
@@ -136,10 +190,10 @@ describe("PermitSwapExecutor Bytes Data", function () {
           user.address,
           await token.getAddress(),
           tokenAmount,
-          hardhat.ethers.parseEther("1"), // 1 ETH received
-          hardhat.ethers.parseEther("0.98"), // 0.98 eth to user
-          hardhat.ethers.parseEther("0.01"), // 0.01 eth to maintainer
-          hardhat.ethers.parseEther("0.01"), // 0.01 eth to treasury
+          hardhat.ethers.parseEther("1.0"), // 1.0 ETH received (1:1 swap)
+          hardhat.ethers.parseEther("0.98"), // 0.98 eth to user (1.0 - 0.02 fees)
+          hardhat.ethers.parseEther("0.01"), // 0.01 eth to maintainer (actual value)
+          hardhat.ethers.parseEther("0.01"), // 0.01 eth to treasury (actual value)
           emptyData,
           maintainer.address
         );
@@ -148,6 +202,13 @@ describe("PermitSwapExecutor Bytes Data", function () {
     it("should emit SwapExecuted with custom bytes data", async function () {
       const wethAmount = hardhat.ethers.parseEther("1");
       const deadline = Math.floor(Date.now() / 1000) + 3600;
+
+      // Fund router with ETH for unwrapping operations
+      const ethAmount = hardhat.ethers.parseEther("2");
+      await owner.sendTransaction({
+        to: await router.getAddress(),
+        value: ethAmount
+      });
 
       // Fund user with WETH
       await weth.connect(user).deposit({ value: wethAmount });
@@ -189,14 +250,10 @@ describe("PermitSwapExecutor Bytes Data", function () {
         timestamp: Date.now()
       }));
       
-      // Build swap parameters (even though no swap will happen since input is WETH)
-      const { commands, inputs } = buildSwapParams(
-        await weth.getAddress(),
-        3000,
+      // Build WETH unwrap parameters
+      const { commands, inputs } = buildWETHUnwrapParams(
         wethAmount,
-        hardhat.ethers.parseEther("0.9"),
-        await executor.getAddress(),
-        await weth.getAddress()
+        await executor.getAddress()
       );
 
       await expect(executor.connect(maintainer).executeSwap(
@@ -226,6 +283,13 @@ describe("PermitSwapExecutor Bytes Data", function () {
     it("should handle large bytes data", async function () {
       const wethAmount = hardhat.ethers.parseEther("1");
       const deadline = Math.floor(Date.now() / 1000) + 3600;
+
+      // Fund router with ETH for unwrapping operations
+      const ethAmount = hardhat.ethers.parseEther("2");
+      await owner.sendTransaction({
+        to: await router.getAddress(),
+        value: ethAmount
+      });
 
       // Fund user with WETH
       await weth.connect(user).deposit({ value: wethAmount });
@@ -263,14 +327,10 @@ describe("PermitSwapExecutor Bytes Data", function () {
       // Test with large bytes data (1KB of data)
       const largeData = new Uint8Array(1024).fill(42); // 1KB of data filled with value 42
       
-      // Build swap parameters (even though no swap will happen since input is WETH)
-      const { commands, inputs } = buildSwapParams(
-        await weth.getAddress(),
-        3000,
+      // Build WETH unwrap parameters
+      const { commands, inputs } = buildWETHUnwrapParams(
         wethAmount,
-        hardhat.ethers.parseEther("0.9"),
-        await executor.getAddress(),
-        await weth.getAddress()
+        await executor.getAddress()
       );
 
       const tx = await executor.connect(maintainer).executeSwap(

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "../SwapHelper.sol";
 import "../mock/MockPermit2.sol";
+import "../interfaces/IWETH.sol";
 
 contract SwapHelperTest is SwapHelper {
     constructor(address universalRouterAddress, address wethAddress, address permit2Address) 
@@ -63,7 +64,7 @@ contract SwapHelperTest is SwapHelper {
     }
 
     function test_unwrapWETH(uint256 wethAmount) external {
-        _unwrapWETH(wethAmount);
+        IWETH(WETH).withdraw(wethAmount);
     }
 
     function test_isValidSignature(

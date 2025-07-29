@@ -118,33 +118,25 @@ abstract contract SwapHelper is TreasuryManager{
         }
     }
 
-    /// @notice Executes a Uniswap swap to WETH using UniversalRouter with external commands and inputs
-    /// @dev Internal function that performs swap using provided commands and inputs with validation
+    /// @notice Executes a swap to receive ETH directly from Universal Router
+    /// @dev Internal function that performs swap using provided commands and inputs.
     /// @param commands The encoded commands for UniversalRouter execution
     /// @param inputs The encoded inputs array corresponding to the commands
     /// @param deadline The expiration timestamp for the swap transaction
-    /// @return wethReceived The actual amount of WETH tokens received from the swap
+    /// @return ethReceived The actual amount of ETH received from the swap and unwrap
     function _swapToWETH(
         bytes memory commands,
         bytes[] memory inputs,
         uint256 deadline
-    ) internal returns (uint256 wethReceived) {
-        // Get initial WETH balance
-        uint256 initialWETHBalance = IERC20PermitFull(WETH).balanceOf(address(this));
+    ) internal returns (uint256 ethReceived) {
+        // Get initial ETH balance (since Universal Router returns ETH directly)
+        uint256 initialETHBalance = address(this).balance;
         
         // Execute the swap through UniversalRouter
         IUniversalRouter(universalRouter).execute(commands, inputs, deadline);
         
-        // Calculate the amount of WETH received
-        uint256 finalWETHBalance = IERC20PermitFull(WETH).balanceOf(address(this));
-        wethReceived = finalWETHBalance - initialWETHBalance;
-    }
-
-    /// @notice Unwraps WETH tokens to native ETH
-    /// @dev Internal function that converts WETH tokens held by this contract to ETH.
-    ///      The ETH will be available in this contract's balance after unwrapping.
-    /// @param wethAmount The amount of WETH tokens to unwrap
-    function _unwrapWETH(uint256 wethAmount) internal {
-        IWETH(WETH).withdraw(wethAmount);
+        // Calculate the amount of ETH received
+        uint256 finalETHBalance = address(this).balance;
+        ethReceived = finalETHBalance - initialETHBalance;
     }
 }

@@ -2,12 +2,12 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 const PermitSwapExecutorModule = buildModule("PermitSwapExecutorModule", (m) => {
-  // Parameters for deployment
-  const uniswapRouter = m.getParameter("uniswapRouter");
-  const treasury = m.getParameter("treasury");
-  const initialOwner = m.getParameter("initialOwner");
+  // Parameters for deployment - updated to match constructor signature
+  const universalRouter = m.getParameter("universalRouter");
+  const weth = m.getParameter("weth");
+  const permit2 = m.getParameter("permit2");
 
-  const permitSwapExecutor = m.contract("PermitSwapExecutor", [uniswapRouter, treasury, initialOwner]);
+  const permitSwapExecutor = m.contract("PermitSwapExecutor", [universalRouter, weth, permit2]);
 
   return { permitSwapExecutor };
 });

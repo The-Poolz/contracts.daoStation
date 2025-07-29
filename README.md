@@ -154,7 +154,7 @@ Current test coverage: **95.45%** statements, **86.67%** functions
 1. Deploy the contract with:
 
    ```solidity
-   constructor(address _uniswapRouter, address initialOwner)
+   constructor(address _universalRouter, address _weth, IPermit2 _permit2)
    ```
 
 2. Set authorized maintainers:
